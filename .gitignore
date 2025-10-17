@@ -1,0 +1,229 @@
+##############################
+# 🌍 GLOBAL SETTINGS
+##############################
+# Ignore OS files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# Ignore temporary files
+*.tmp
+*.log
+*.swp
+*.swo
+*.bak
+*.old
+
+# Ignore IDE settings
+.vscode/
+.idea/
+*.iml
+
+##############################
+# 🦋 FLUTTER / DART PROJECT
+##############################
+
+# Flutter specific
+**/build/
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.packages
+**/.pub-cache/
+**/.pub/
+**/.gradle/
+**/.android/
+**/.ios/
+**/.vs/
+.flutter-plugins
+.flutter-plugins-dependencies
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+
+# Android (Gradle)
+android/.gradle/
+android/app/build/
+android/key.properties
+android/local.properties
+android/key.jks
+*.keystore
+*.jks
+
+# iOS
+ios/Pods/
+ios/Runner.xcworkspace/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/.symlinks/
+ios/DerivedData/
+ios/build/
+ios/.generated/
+
+# Web
+web/.dart_tool/
+web/build/
+
+# Windows
+windows/.vs/
+windows/x64/
+windows/Debug/
+windows/Release/
+windows/build/
+
+# MacOS
+macos/build/
+macos/DerivedData/
+
+# Linux
+linux/build/
+
+# Environment files
+.env
+.env.*
+.env.local
+*.secret.json
+
+# Flutter crash logs
+flutter_*.log
+
+##############################
+# ⚙️ .NET 8 BACKEND PROJECT
+##############################
+
+# Build output
+bin/
+obj/
+out/
+publish/
+TestResults/
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio specific
+.vs/
+*.psess
+*.vsp
+*.vspx
+*.vspscc
+*_i.c
+*_p.c
+*_h.h
+*.ncb
+*.opendb
+*.opensdf
+*.sdf
+*.cachefile
+*.dbmdl
+*.bak
+*.bak2
+
+# User-specific files
+*.userprefs
+*.orig
+
+# NuGet
+packages/
+*.nupkg
+*.snupkg
+*.nuspec
+.nuget/
+project.lock.json
+artifacts/
+*.lock.json
+
+# Logs
+*.log
+logs/
+log/
+Logs/
+logfile.txt
+
+# Configurations
+appsettings.Development.json
+appsettings.Local.json
+appsettings.Secret.json
+appsettings.json.backup
+secrets.json
+
+##############################
+# ☁️ AWS Rekognition / S3
+##############################
+# Never commit credentials or S3 cache
+aws/
+.aws/
+*.pem
+*.cer
+*.crt
+*.pfx
+*.key
+*.csr
+credentials.json
+credentials.txt
+aws-credentials/
+rekognition-config.json
+s3-config.json
+
+##############################
+# 🧠 DATABASE & BACKUP FILES
+##############################
+*.db
+*.mdf
+*.ldf
+*.bak
+*.sqlite
+*.sql
+Data/*.db
+Data/*.bak
+Database/*.bak
+Database/*.sql
+
+##############################
+# 📸 MEDIA FILES (FACE IMAGES)
+##############################
+/faces/
+/checkins/
+/uploads/
+/screenshots/
+/temp_images/
+*.jpg
+*.jpeg
+*.png
+
+##############################
+# 🧪 TEST & DEBUG
+##############################
+test-output/
+coverage/
+coverage_report/
+*.coverage
+*.coveragexml
+*.trx
+
+##############################
+# 🧰 TOOLS & DEPLOY
+##############################
+.cloudflared/
+ngrok.yml
+ngrok.log
+docker-compose.override.yml
+*.pid
+*.tar
+*.zip
+*.7z
+
+##############################
+# 🧑‍💻 CUSTOM LOCAL FILES
+##############################
+local/
+secrets/
+my_notes/
+notes.txt
+todo.txt
+debug.log

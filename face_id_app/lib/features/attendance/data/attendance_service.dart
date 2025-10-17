@@ -15,19 +15,17 @@ class AttendanceService {
     }
   }
 
-  /// Submit face check-in or check-out
-  /// [faceImageBase64] - Base64 encoded face image
-  /// [checkType] - "IN" for check-in, "OUT" for check-out
-  Future<AttendanceResponse> submitAttendance({
-    required String faceImageBase64,
-    required String checkType,
+  /// Verify face for realtime check-in (always "IN")
+  /// Uses /api/face/verify endpoint
+  /// [imageBase64] - Base64 encoded face image
+  Future<AttendanceResponse> verifyFace({
+    required String imageBase64,
   }) async {
     try {
       final response = await _dio.post(
-        '/api/face/checkin',
+        '/api/face/verify',
         data: {
-          'faceImageBase64': faceImageBase64,
-          'checkType': checkType,
+          'ImageBase64': imageBase64, // PascalCase for .NET API
         },
       );
 
@@ -42,15 +40,60 @@ class AttendanceService {
         // Network error
         return AttendanceResponse(
           success: false,
+          status: 'error',
           message: 'Lỗi kết nối: ${e.message}',
-          userData: null,
+          confidence: 0,
         );
       }
     } catch (e) {
       return AttendanceResponse(
         success: false,
+        status: 'error',
         message: 'Lỗi không xác định: $e',
-        userData: null,
+        confidence: 0,
+      );
+    }
+  }
+
+  /// Submit face check-in or check-out (manual)
+  /// Uses /api/face/checkin endpoint (for manual selection)
+  /// [faceImageBase64] - Base64 encoded face image
+  /// [checkType] - "IN" for check-in, "OUT" for check-out
+  Future<AttendanceResponse> submitAttendance({
+    required String faceImageBase64,
+    required String checkType,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/api/face/checkin',
+        data: {
+          'FaceImageBase64': faceImageBase64, // PascalCase for .NET API
+          'CheckType': checkType, // PascalCase for .NET API
+        },
+      );
+
+      return AttendanceResponse.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      if (e.response != null) {
+        // Server responded with error
+        return AttendanceResponse.fromJson(
+          e.response!.data as Map<String, dynamic>,
+        );
+      } else {
+        // Network error
+        return AttendanceResponse(
+          success: false,
+          status: 'error',
+          message: 'Lỗi kết nối: ${e.message}',
+          confidence: 0,
+        );
+      }
+    } catch (e) {
+      return AttendanceResponse(
+        success: false,
+        status: 'error',
+        message: 'Lỗi không xác định: $e',
+        confidence: 0,
       );
     }
   }

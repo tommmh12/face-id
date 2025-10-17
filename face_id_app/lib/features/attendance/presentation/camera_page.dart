@@ -105,11 +105,10 @@ class _CameraPageState extends ConsumerState<CameraPage> {
       // Convert to Base64 (resize to 800px width for faster upload)
       final base64Image = ImageConverter.toBase64(bytes, maxWidth: 800);
 
-      // Submit to API
+      // Verify face using realtime endpoint
       final service = ref.read(attendanceServiceProvider);
-      final response = await service.submitAttendance(
-        faceImageBase64: base64Image,
-        checkType: widget.checkType,
+      final response = await service.verifyFace(
+        imageBase64: base64Image,
       );
 
       if (!mounted) return;
