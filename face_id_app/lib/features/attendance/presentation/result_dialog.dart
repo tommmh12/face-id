@@ -11,26 +11,63 @@ class ResultDialog extends StatelessWidget {
     required this.checkType,
   });
 
-  String _formatDateTime(String isoDateTime) {
-    try {
-      final dateTime = DateTime.parse(isoDateTime);
-      final day = dateTime.day.toString().padLeft(2, '0');
-      final month = dateTime.month.toString().padLeft(2, '0');
-      final year = dateTime.year;
-      final hour = dateTime.hour.toString().padLeft(2, '0');
-      final minute = dateTime.minute.toString().padLeft(2, '0');
-      final second = dateTime.second.toString().padLeft(2, '0');
-      
-      return '$day/$month/$year $hour:$minute:$second';
-    } catch (e) {
-      return isoDateTime;
+  IconData _getStatusIcon() {
+    switch (response.status) {
+      case 'verified':
+        return Icons.check_circle;
+      case 'no_face':
+        return Icons.face_retouching_off;
+      case 'no_match':
+      case 'not_registered':
+        return Icons.person_off;
+      case 'no_users':
+        return Icons.group_off;
+      case 'already_checked_in':
+        return Icons.event_busy;
+      case 'low_quality':
+        return Icons.wb_sunny_outlined;
+      default:
+        return Icons.error;
+    }
+  }
+
+  Color _getStatusColor() {
+    switch (response.status) {
+      case 'verified':
+        return Colors.green.shade700;
+      case 'no_face':
+      case 'low_quality':
+        return Colors.orange.shade700;
+      case 'already_checked_in':
+        return Colors.blue.shade700;
+      default:
+        return Colors.red.shade700;
+    }
+  }
+
+  String _getTitle() {
+    switch (response.status) {
+      case 'verified':
+        return 'Thành công!';
+      case 'no_face':
+        return 'Không thấy khuôn mặt';
+      case 'no_match':
+      case 'not_registered':
+        return 'Chưa đăng ký';
+      case 'already_checked_in':
+        return 'Đã chấm công';
+      case 'low_quality':
+        return 'Chất lượng ảnh thấp';
+      default:
+        return 'Thất bại';
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isSuccess = response.success;
-    final userData = response.userData;
+    final isSuccess = response.status == 'verified';
+    final matchedEmployee = response.matchedEmployee;
+    final statusColor = _getStatusColor();
 
     return Dialog(
       shape: RoundedRectangleBorder(
@@ -46,85 +83,133 @@ class ResultDialog extends StatelessWidget {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: isSuccess
-                    ? Colors.green.shade100
-                    : Colors.red.shade100,
+                color: statusColor.withOpacity(0.15),
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                isSuccess ? Icons.check_circle : Icons.error,
+                _getStatusIcon(),
                 size: 50,
-                color: isSuccess ? Colors.green.shade700 : Colors.red.shade700,
+                color: statusColor,
               ),
             ),
             const SizedBox(height: 16),
 
             // Title
             Text(
-              isSuccess ? 'Thành công!' : 'Thất bại',
+              _getTitle(),
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: isSuccess ? Colors.green.shade700 : Colors.red.shade700,
+                color: statusColor,
               ),
             ),
             const SizedBox(height: 16),
 
             // Content
-            if (isSuccess && userData != null) ...[
+            if (isSuccess && matchedEmployee != null) ...[
+              _buildInfoRow(
+                icon: Icons.badge,
+                label: 'Mã nhân viên',
+                value: matchedEmployee.employeeCode,
+              ),
+              const SizedBox(height: 12),
+              
               _buildInfoRow(
                 icon: Icons.person,
                 label: 'Họ và tên',
-                value: userData.fullName,
+                value: matchedEmployee.fullName,
               ),
               const SizedBox(height: 12),
               
-              _buildInfoRow(
-                icon: Icons.access_time,
-                label: 'Thời gian',
-                value: _formatDateTime(userData.checkTime),
-              ),
-              const SizedBox(height: 12),
+              if (matchedEmployee.departmentName != null) ...[
+                _buildInfoRow(
+                  icon: Icons.business,
+                  label: 'Phòng ban',
+                  value: matchedEmployee.departmentName!,
+                ),
+                const SizedBox(height: 12),
+              ],
+              
+              if (matchedEmployee.position != null) ...[
+                _buildInfoRow(
+                  icon: Icons.work,
+                  label: 'Chức vụ',
+                  value: matchedEmployee.position!,
+                ),
+                const SizedBox(height: 12),
+              ],
               
               _buildInfoRow(
                 icon: Icons.trending_up,
-                label: 'Độ tương đồng',
-                value: '${userData.similarityScore.toStringAsFixed(1)}%',
+                label: 'Độ tin cậy',
+                value: '${response.confidence.toStringAsFixed(2)}%',
               ),
               const SizedBox(height: 12),
               
               _buildInfoRow(
-                icon: userData.checkType == 'IN' 
-                    ? Icons.login 
-                    : Icons.logout,
+                icon: Icons.login,
                 label: 'Loại',
-                value: userData.checkType == 'IN' 
-                    ? 'Vào làm (Check-In)' 
-                    : 'Tan ca (Check-Out)',
+                value: 'Vào làm (Check-In)',
               ),
             ] else ...[
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.red.shade50,
+                  color: statusColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: statusColor.withOpacity(0.3),
+                    width: 1,
+                  ),
                 ),
-                child: Row(
+                child: Column(
                   children: [
-                    Icon(Icons.info_outline, color: Colors.red.shade700),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        response.message,
+                    Row(
+                      children: [
+                        Icon(Icons.info_outline, color: statusColor),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            response.message,
+                            style: TextStyle(
+                              color: statusColor,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (response.confidence > 0) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Độ tin cậy: ${response.confidence.toStringAsFixed(2)}%',
                         style: TextStyle(
-                          color: Colors.red.shade900,
-                          fontSize: 14,
+                          color: statusColor.withOpacity(0.7),
+                          fontSize: 12,
                         ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
+              
+              // Suggestions based on status
+              const SizedBox(height: 16),
+              if (response.status == 'no_face') ...[
+                _buildSuggestion('Đảm bảo khuôn mặt trong khung hình'),
+                _buildSuggestion('Ánh sáng đủ để nhận diện'),
+              ] else if (response.status == 'low_quality') ...[
+                _buildSuggestion('Cải thiện ánh sáng'),
+                _buildSuggestion('Giữ camera ổn định'),
+                _buildSuggestion('Nhìn thẳng vào camera'),
+              ] else if (response.status == 'not_registered' || response.status == 'no_match') ...[
+                _buildSuggestion('Liên hệ quản trị viên để đăng ký khuôn mặt'),
+                _buildSuggestion('Kiểm tra bạn đã được thêm vào hệ thống'),
+              ] else if (response.status == 'no_users') ...[
+                _buildSuggestion('Chưa có nhân viên nào đăng ký khuôn mặt'),
+                _buildSuggestion('Liên hệ quản trị viên'),
+              ],
             ],
             
             const SizedBox(height: 24),
@@ -135,20 +220,42 @@ class ResultDialog extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isSuccess
-                      ? Colors.green.shade400
-                      : Colors.red.shade400,
+                  backgroundColor: statusColor,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 child: const Text(
                   'Đóng',
-                  style: TextStyle(fontSize: 16),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSuggestion(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Icon(Icons.lightbulb_outline, size: 16, color: Colors.orange.shade700),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade700,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
