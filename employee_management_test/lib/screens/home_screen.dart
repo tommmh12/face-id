@@ -65,6 +65,15 @@ class HomeScreen extends StatelessWidget {
                     onTap: () => Navigator.pushNamed(context, '/employees'),
                   ),
 
+                  // Department Management
+                  _buildFeatureCard(
+                    context,
+                    icon: Icons.business,
+                    title: 'Quản Lý\nPhòng Ban',
+                    color: Colors.teal,
+                    onTap: () => Navigator.pushNamed(context, '/departments'),
+                  ),
+
                   // Face Registration
                   _buildFeatureCard(
                     context,

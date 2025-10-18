@@ -41,13 +41,19 @@ class PayrollPeriodResponse {
 
   factory PayrollPeriodResponse.fromJson(Map<String, dynamic> json) {
     return PayrollPeriodResponse(
-      id: json['id'],
-      periodName: json['periodName'],
-      startDate: DateTime.parse(json['startDate']),
-      endDate: DateTime.parse(json['endDate']),
-      isClosed: json['isClosed'],
-      closedAt: json['closedAt'] != null ? DateTime.parse(json['closedAt']) : null,
-      createdAt: DateTime.parse(json['createdAt']),
+      id: json['id'] ?? 0,
+      periodName: json['periodName']?.toString() ?? '',
+      startDate: json['startDate'] != null
+          ? DateTime.tryParse(json['startDate']) ?? DateTime.now()
+          : DateTime.now(),
+      endDate: json['endDate'] != null
+          ? DateTime.tryParse(json['endDate']) ?? DateTime.now()
+          : DateTime.now(),
+      isClosed: json['isClosed'] ?? false,
+      closedAt: json['closedAt'] != null ? DateTime.tryParse(json['closedAt']) : null,
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt']) ?? DateTime.now()
+          : DateTime.now(),
     );
   }
 }
@@ -125,19 +131,21 @@ class PayrollRuleResponse {
 
   factory PayrollRuleResponse.fromJson(Map<String, dynamic> json) {
     return PayrollRuleResponse(
-      id: json['id'],
-      employeeId: json['employeeId'],
-      baseSalary: json['baseSalary']?.toDouble() ?? 0.0,
-      standardWorkingDays: json['standardWorkingDays'],
-      socialInsuranceRate: json['socialInsuranceRate']?.toDouble() ?? 0.0,
-      healthInsuranceRate: json['healthInsuranceRate']?.toDouble() ?? 0.0,
-      unemploymentInsuranceRate: json['unemploymentInsuranceRate']?.toDouble() ?? 0.0,
-      personalDeduction: json['personalDeduction']?.toDouble() ?? 0.0,
-      numberOfDependents: json['numberOfDependents'],
-      dependentDeduction: json['dependentDeduction']?.toDouble() ?? 0.0,
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
-      isActive: json['isActive'],
+      id: json['id'] ?? 0,
+      employeeId: json['employeeId'] ?? 0,
+      baseSalary: (json['baseSalary'] ?? 0).toDouble(),
+      standardWorkingDays: json['standardWorkingDays'] ?? 22,
+      socialInsuranceRate: (json['socialInsuranceRate'] ?? 0).toDouble(),
+      healthInsuranceRate: (json['healthInsuranceRate'] ?? 0).toDouble(),
+      unemploymentInsuranceRate: (json['unemploymentInsuranceRate'] ?? 0).toDouble(),
+      personalDeduction: (json['personalDeduction'] ?? 0).toDouble(),
+      numberOfDependents: json['numberOfDependents'] ?? 0,
+      dependentDeduction: (json['dependentDeduction'] ?? 0).toDouble(),
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt']) ?? DateTime.now()
+          : DateTime.now(),
+      updatedAt: json['updatedAt'] != null ? DateTime.tryParse(json['updatedAt']) : null,
+      isActive: json['isActive'] ?? true,
     );
   }
 }
@@ -203,16 +211,20 @@ class AllowanceResponse {
 
   factory AllowanceResponse.fromJson(Map<String, dynamic> json) {
     return AllowanceResponse(
-      id: json['id'],
-      employeeId: json['employeeId'],
-      allowanceType: json['allowanceType'],
-      amount: json['amount']?.toDouble() ?? 0.0,
-      isDeduction: json['isDeduction'],
-      isRecurring: json['isRecurring'],
-      effectiveDate: DateTime.parse(json['effectiveDate']),
-      expiryDate: json['expiryDate'] != null ? DateTime.parse(json['expiryDate']) : null,
-      isActive: json['isActive'],
-      createdAt: DateTime.parse(json['createdAt']),
+      id: json['id'] ?? 0,
+      employeeId: json['employeeId'] ?? 0,
+      allowanceType: json['allowanceType']?.toString() ?? '',
+      amount: (json['amount'] ?? 0).toDouble(),
+      isDeduction: json['isDeduction'] ?? false,
+      isRecurring: json['isRecurring'] ?? false,
+      effectiveDate: json['effectiveDate'] != null
+          ? DateTime.tryParse(json['effectiveDate']) ?? DateTime.now()
+          : DateTime.now(),
+      expiryDate: json['expiryDate'] != null ? DateTime.tryParse(json['expiryDate']) : null,
+      isActive: json['isActive'] ?? true,
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt']) ?? DateTime.now()
+          : DateTime.now(),
     );
   }
 }
@@ -324,23 +336,25 @@ class PayrollRecordResponse {
 
   factory PayrollRecordResponse.fromJson(Map<String, dynamic> json) {
     return PayrollRecordResponse(
-      id: json['id'],
-      payrollPeriodId: json['payrollPeriodId'],
-      employeeId: json['employeeId'],
-      employeeName: json['employeeName'],
-      totalWorkingDays: json['totalWorkingDays']?.toDouble() ?? 0.0,
-      totalOTHours: json['totalOTHours']?.toDouble() ?? 0.0,
-      totalOTPayment: json['totalOTPayment']?.toDouble() ?? 0.0,
-      baseSalaryActual: json['baseSalaryActual']?.toDouble() ?? 0.0,
-      totalAllowances: json['totalAllowances']?.toDouble() ?? 0.0,
-      bonus: json['bonus']?.toDouble() ?? 0.0,
-      adjustedGrossIncome: json['adjustedGrossIncome']?.toDouble() ?? 0.0,
-      insuranceDeduction: json['insuranceDeduction']?.toDouble() ?? 0.0,
-      pitDeduction: json['pitDeduction']?.toDouble() ?? 0.0,
-      otherDeductions: json['otherDeductions']?.toDouble() ?? 0.0,
-      netSalary: json['netSalary']?.toDouble() ?? 0.0,
-      calculatedAt: DateTime.parse(json['calculatedAt']),
-      notes: json['notes'],
+      id: json['id'] ?? 0,
+      payrollPeriodId: json['payrollPeriodId'] ?? 0,
+      employeeId: json['employeeId'] ?? 0,
+      employeeName: json['employeeName']?.toString() ?? '',
+      totalWorkingDays: (json['totalWorkingDays'] ?? 0).toDouble(),
+      totalOTHours: (json['totalOTHours'] ?? 0).toDouble(),
+      totalOTPayment: (json['totalOTPayment'] ?? 0).toDouble(),
+      baseSalaryActual: (json['baseSalaryActual'] ?? 0).toDouble(),
+      totalAllowances: (json['totalAllowances'] ?? 0).toDouble(),
+      bonus: (json['bonus'] ?? 0).toDouble(),
+      adjustedGrossIncome: (json['adjustedGrossIncome'] ?? 0).toDouble(),
+      insuranceDeduction: (json['insuranceDeduction'] ?? 0).toDouble(),
+      pitDeduction: (json['pitDeduction'] ?? 0).toDouble(),
+      otherDeductions: (json['otherDeductions'] ?? 0).toDouble(),
+      netSalary: (json['netSalary'] ?? 0).toDouble(),
+      calculatedAt: json['calculatedAt'] != null
+          ? DateTime.tryParse(json['calculatedAt']) ?? DateTime.now()
+          : DateTime.now(),
+      notes: json['notes']?.toString(),
     );
   }
 }

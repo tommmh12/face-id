@@ -31,24 +31,33 @@ class Employee {
     this.faceRegisteredAt,
   });
 
-  factory Employee.fromJson(Map<String, dynamic> json) {
-    return Employee(
-      id: json['id'],
-      employeeCode: json['employeeCode'],
-      fullName: json['fullName'],
-      email: json['email'],
-      phoneNumber: json['phoneNumber'],
-      departmentId: json['departmentId'],
-      position: json['position'],
-      dateOfBirth: json['dateOfBirth'] != null ? DateTime.parse(json['dateOfBirth']) : null,
-      joinDate: DateTime.parse(json['joinDate']),
-      createdAt: DateTime.parse(json['createdAt']),
-      isActive: json['isActive'],
-      isFaceRegistered: json['isFaceRegistered'],
-      faceImageUrl: json['faceImageUrl'],
-      faceRegisteredAt: json['faceRegisteredAt'] != null ? DateTime.parse(json['faceRegisteredAt']) : null,
-    );
-  }
+factory Employee.fromJson(Map<String, dynamic> json) {
+  return Employee(
+    id: json['id'] ?? 0,
+    employeeCode: json['employeeCode']?.toString() ?? '',
+    fullName: json['fullName']?.toString() ?? 'Chưa có tên',
+    email: json['email']?.toString(),
+    phoneNumber: json['phoneNumber']?.toString(),
+    departmentId: json['departmentId'] ?? -1,
+    position: json['position']?.toString(),
+    dateOfBirth: json['dateOfBirth'] != null
+        ? DateTime.tryParse(json['dateOfBirth'])
+        : null,
+    joinDate: json['joinDate'] != null
+        ? DateTime.tryParse(json['joinDate']) ?? DateTime.now()
+        : DateTime.now(),
+    createdAt: json['createdAt'] != null
+        ? DateTime.tryParse(json['createdAt']) ?? DateTime.now()
+        : DateTime.now(),
+    isActive: json['isActive'] ?? false,
+    isFaceRegistered: json['isFaceRegistered'] ?? false,
+    faceImageUrl: json['faceImageUrl']?.toString(),
+    faceRegisteredAt: json['faceRegisteredAt'] != null
+        ? DateTime.tryParse(json['faceRegisteredAt'])
+        : null,
+  );
+}
+
 
   Map<String, dynamic> toJson() {
     return {

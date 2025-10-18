@@ -433,7 +433,6 @@ class _FaceCheckinScreenState extends State<FaceCheckinScreen> {
 
   @override
   void dispose() {
-    _faceApiService.dispose();
     super.dispose();
   }
 }

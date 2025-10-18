@@ -3,6 +3,8 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:image/image.dart' as img;
+import 'package:flutter/foundation.dart';
+import 'app_logger.dart'; // ✅ Import AppLogger
 
 class CameraHelper {
   static CameraController? _controller;
@@ -23,6 +25,7 @@ class CameraHelper {
           frontCamera,
           ResolutionPreset.medium,
           enableAudio: false,
+          imageFormatGroup: ImageFormatGroup.jpeg, // ✅ Fix FourCC 0 error
         );
 
         await _controller!.initialize();
@@ -49,10 +52,28 @@ class CameraHelper {
       final File imageFile = File(image.path);
       final Uint8List imageBytes = await imageFile.readAsBytes();
       
+      // ✅ Validate image is not empty
+      if (imageBytes.isEmpty) {
+        await imageFile.delete();
+        throw Exception('Captured image is empty (FourCC 0 error)');
+      }
+      
+      // ✅ Validate minimum file size (50KB)
+      if (imageBytes.length < 50 * 1024) {
+        await imageFile.delete();
+        throw Exception('Image too small (< 50KB). Please try again.');
+      }
+      
       // Optional: Compress and resize image
       final compressedBytes = await _compressImage(imageBytes);
       
-      // Convert to base64
+      // ✅ Validate compressed image is not empty
+      if (compressedBytes.isEmpty) {
+        await imageFile.delete();
+        throw Exception('Image compression failed');
+      }
+      
+      // Convert to base64 (pure base64, NO prefix like "data:image/jpeg;base64,")
       final base64String = base64Encode(compressedBytes);
       
       // Clean up temporary file
@@ -64,24 +85,67 @@ class CameraHelper {
     }
   }
 
-  /// Compress image to reduce size
+  /// Compress image to reduce size and ensure quality
   static Future<Uint8List> _compressImage(Uint8List imageBytes) async {
+    final stopwatch = Stopwatch()..start();
+    
     try {
       // Decode image
       img.Image? image = img.decodeImage(imageBytes);
       if (image == null) {
+        AppLogger.warning('Failed to decode image, using original bytes', tag: 'CameraHelper');
         return imageBytes; // Return original if decoding fails
       }
 
-      // Resize image to max 800px width while maintaining aspect ratio
-      if (image.width > 800) {
-        image = img.copyResize(image, width: 800);
+      AppLogger.data(
+        'Original image: ${image.width}x${image.height}, ${imageBytes.length} bytes (${(imageBytes.length / 1024).toStringAsFixed(1)} KB)',
+        tag: 'CameraHelper',
+      );
+
+      // ✅ Resize to optimal size for face recognition (max 1080px, min 480px)
+      // AWS Rekognition works best with images 800-1600px
+      int targetWidth = image.width;
+      
+      if (image.width > 1080) {
+        targetWidth = 1080;
+      } else if (image.width < 480) {
+        // Image too small, might cause detection issues
+        AppLogger.warning('Image width < 480px, keeping original size', tag: 'CameraHelper');
       }
 
-      // Encode to JPEG with quality 85%
+      if (targetWidth != image.width) {
+        image = img.copyResize(image, width: targetWidth);
+        AppLogger.data('Resized to: ${image.width}x${image.height}', tag: 'CameraHelper');
+      }
+
+      // ✅ Encode to JPEG with quality 85% (balance between quality & size)
       final compressedBytes = img.encodeJpg(image, quality: 85);
+      AppLogger.data(
+        'Compressed: ${compressedBytes.length} bytes (${(compressedBytes.length / 1024).toStringAsFixed(1)} KB)',
+        tag: 'CameraHelper',
+      );
+      
+      // ✅ Validate final size < 2MB (AWS limit is 15MB, but 2MB is ideal)
+      const maxSizeBytes = 2 * 1024 * 1024; // 2MB
+      if (compressedBytes.length > maxSizeBytes) {
+        AppLogger.warning('Compressed image > 2MB, re-compressing with quality 70%', tag: 'CameraHelper');
+        final recompressed = img.encodeJpg(image, quality: 70);
+        AppLogger.data('Re-compressed: ${recompressed.length} bytes (${(recompressed.length / 1024).toStringAsFixed(1)} KB)', tag: 'CameraHelper');
+        
+        stopwatch.stop();
+        AppLogger.performance('Image compression (with re-compression)', stopwatch.elapsed);
+        
+        return Uint8List.fromList(recompressed);
+      }
+
+      stopwatch.stop();
+      AppLogger.performance('Image compression', stopwatch.elapsed);
+      
       return Uint8List.fromList(compressedBytes);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      stopwatch.stop();
+      AppLogger.error('Compression error', error: e, stackTrace: stackTrace, tag: 'CameraHelper');
+      
       // Return original bytes if compression fails
       return imageBytes;
     }
@@ -120,6 +184,7 @@ class CameraHelper {
         newCamera,
         ResolutionPreset.medium,
         enableAudio: false,
+        imageFormatGroup: ImageFormatGroup.jpeg, // ✅ Fix FourCC 0 error
       );
       await _controller!.initialize();
     } catch (e) {

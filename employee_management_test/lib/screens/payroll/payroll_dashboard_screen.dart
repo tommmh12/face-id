@@ -459,7 +459,6 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
 
   @override
   void dispose() {
-    _payrollService.dispose();
     super.dispose();
   }
 }

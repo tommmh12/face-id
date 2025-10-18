@@ -7,8 +7,8 @@ plugins {
 
 android {
     namespace = "com.example.employee_management_test"
-    compileSdk = 34
-    ndkVersion = "25.1.8937393"
+    compileSdk = 36
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

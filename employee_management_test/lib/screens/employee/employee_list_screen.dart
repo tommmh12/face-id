@@ -77,7 +77,7 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
       (dept) => dept.id == departmentId,
       orElse: () => Department(
         id: -1,
-        code: '',
+        code: null,
         name: 'Unknown',
         createdAt: DateTime.now(),
         isActive: false,
@@ -236,7 +236,11 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
                                   isThreeLine: true,
                                   onTap: () {
                                     // Navigate to employee detail screen
-                                    // TODO: Implement employee detail screen
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/employee/detail',
+                                      arguments: {'employeeId': employee.id},
+                                    ).then((_) => _loadData());
                                   },
                                 ),
                               );
@@ -259,7 +263,6 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
 
   @override
   void dispose() {
-    _employeeService.dispose();
     super.dispose();
   }
 }
