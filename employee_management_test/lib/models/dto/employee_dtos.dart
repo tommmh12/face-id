@@ -44,9 +44,9 @@ class CreateEmployeeResponse {
 
   factory CreateEmployeeResponse.fromJson(Map<String, dynamic> json) {
     return CreateEmployeeResponse(
-      success: json['success'],
-      message: json['message'],
-      employeeCode: json['employeeCode'],
+      success: json['success'] ?? false,
+      message: json['message']?.toString() ?? '',
+      employeeCode: json['employeeCode']?.toString(),
       employeeId: json['employeeId'],
     );
   }
@@ -64,9 +64,17 @@ class RegisterEmployeeFaceRequest {
   });
 
   Map<String, dynamic> toJson() {
+    // ✅ Validation logging
+    if (imageBase64.isEmpty) {
+      throw ArgumentError('❌ imageBase64 cannot be empty');
+    }
+    if (imageBase64.length < 100) {
+      throw ArgumentError('❌ imageBase64 too short (${imageBase64.length} chars)');
+    }
+    
     return {
       'employeeId': employeeId,
-      'imageBase64': imageBase64,
+      'imageBase64': imageBase64, // Pure base64, NO prefix
     };
   }
 }
@@ -86,10 +94,10 @@ class RegisterEmployeeFaceResponse {
 
   factory RegisterEmployeeFaceResponse.fromJson(Map<String, dynamic> json) {
     return RegisterEmployeeFaceResponse(
-      success: json['success'],
-      message: json['message'],
-      faceId: json['faceId'],
-      s3ImageUrl: json['s3ImageUrl'],
+      success: json['success'] ?? false,
+      message: json['message']?.toString() ?? '',
+      faceId: json['faceId']?.toString(),
+      s3ImageUrl: json['s3ImageUrl']?.toString(),
     );
   }
 }
@@ -102,8 +110,16 @@ class VerifyFaceRequest {
   });
 
   Map<String, dynamic> toJson() {
+    // ✅ Validation logging
+    if (imageBase64.isEmpty) {
+      throw ArgumentError('❌ imageBase64 cannot be empty');
+    }
+    if (imageBase64.length < 100) {
+      throw ArgumentError('❌ imageBase64 too short (${imageBase64.length} chars)');
+    }
+    
     return {
-      'imageBase64': imageBase64,
+      'imageBase64': imageBase64, // Pure base64, NO prefix
     };
   }
 }
@@ -127,10 +143,10 @@ class VerifyEmployeeFaceResponse {
 
   factory VerifyEmployeeFaceResponse.fromJson(Map<String, dynamic> json) {
     return VerifyEmployeeFaceResponse(
-      success: json['success'],
-      status: json['status'],
-      message: json['message'],
-      confidence: json['confidence']?.toDouble() ?? 0.0,
+      success: json['success'] ?? false,
+      status: json['status']?.toString() ?? '',
+      message: json['message']?.toString() ?? '',
+      confidence: (json['confidence'] ?? 0).toDouble(),
       matchedEmployee: json['matchedEmployee'] != null
           ? EmployeeInfo.fromJson(json['matchedEmployee'])
           : null,
@@ -158,11 +174,11 @@ class EmployeeInfo {
 
   factory EmployeeInfo.fromJson(Map<String, dynamic> json) {
     return EmployeeInfo(
-      employeeId: json['employeeId'],
-      employeeCode: json['employeeCode'],
-      fullName: json['fullName'],
-      position: json['position'],
-      department: json['department'],
+      employeeId: json['employeeId'] ?? 0,
+      employeeCode: json['employeeCode']?.toString() ?? '',
+      fullName: json['fullName']?.toString() ?? '',
+      position: json['position']?.toString(),
+      department: json['department']?.toString(),
     );
   }
 }
@@ -182,10 +198,12 @@ class AttendanceInfo {
 
   factory AttendanceInfo.fromJson(Map<String, dynamic> json) {
     return AttendanceInfo(
-      attendanceId: json['attendanceId'],
-      checkType: json['checkType'],
-      checkTime: DateTime.parse(json['checkTime']),
-      s3ImageUrl: json['s3ImageUrl'],
+      attendanceId: json['attendanceId'] ?? 0,
+      checkType: json['checkType']?.toString() ?? '',
+      checkTime: json['checkTime'] != null
+          ? DateTime.tryParse(json['checkTime']) ?? DateTime.now()
+          : DateTime.now(),
+      s3ImageUrl: json['s3ImageUrl']?.toString(),
     );
   }
 }

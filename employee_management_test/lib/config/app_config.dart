@@ -1,6 +1,6 @@
 class AppConfig {
   // API Configuration
-  static const String baseUrl = 'https://your-api-url.com/api';
+  static const String baseUrl = 'https://api.studyplannerapp.io.vn/api';
   
   // Update this URL to point to your actual C# API server
   // Examples:

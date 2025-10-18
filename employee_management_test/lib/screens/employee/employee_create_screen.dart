@@ -337,7 +337,6 @@ class _EmployeeCreateScreenState extends State<EmployeeCreateScreen> {
     _emailController.dispose();
     _phoneController.dispose();
     _positionController.dispose();
-    _employeeService.dispose();
     super.dispose();
   }
 }
