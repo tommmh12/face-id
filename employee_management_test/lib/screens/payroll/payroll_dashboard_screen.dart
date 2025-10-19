@@ -4,7 +4,6 @@ import '../../models/dto/payroll_dtos.dart';
 import '../../services/payroll_api_service.dart';
 import '../../utils/app_logger.dart';
 import 'audit_log_screen.dart';
-import 'employee_hr_profile_screen.dart';
 
 /// 💰 Payroll Dashboard - Material 3 Design
 /// 
@@ -521,7 +520,6 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
   void _showCreatePeriodDialog(BuildContext context) {
     AppLogger.ui('Opening create period dialog', tag: 'PayrollDashboard');
     
-    final theme = Theme.of(context);
     final now = DateTime.now();
     final periodNameController = TextEditingController(
       text: 'Kỳ lương ${DateFormat('MM/yyyy').format(now)}',
