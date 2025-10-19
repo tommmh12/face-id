@@ -29,6 +29,141 @@ class AppColors {
   static const borderColor = Color(0xFFEEEEEE);
 }
 
+/// Payroll Module Colors (Material 3 Design)
+/// 
+/// Optimized color palette for payroll management screens
+/// with high contrast and accessibility standards
+class PayrollColors {
+  // Primary - Main actions & interactive elements
+  static const primary = Color(0xFF0A84FF);
+  static const primaryDark = Color(0xFF0066CC);
+  static const primaryLight = Color(0xFF4DA3FF);
+  
+  // Success - Net salary, approved status, positive indicators
+  static const success = Color(0xFF34C759);
+  static const successDark = Color(0xFF2AA047);
+  static const successLight = Color(0xFF6FD98C);
+  
+  // Warning - Pending status, overtime, alerts
+  static const warning = Color(0xFFFF9500);
+  static const warningDark = Color(0xFFE68600);
+  static const warningLight = Color(0xFFFFB347);
+  
+  // Error - Deductions, rejected status, critical alerts
+  static const error = Color(0xFFFF3B30);
+  static const errorDark = Color(0xFFE62B1F);
+  static const errorLight = Color(0xFFFF6961);
+  
+  // Info - General information, tooltips
+  static const info = Color(0xFF007AFF);
+  static const infoDark = Color(0xFF005FCC);
+  static const infoLight = Color(0xFF4DA3FF);
+  
+  // Neutral - Text, borders, backgrounds
+  static const textPrimary = Color(0xFF1C1C1E);
+  static const textSecondary = Color(0xFF8E8E93);
+  static const textTertiary = Color(0xFFC7C7CC);
+  static const bgPrimary = Color(0xFFFFFFFF);
+  static const bgSecondary = Color(0xFFF2F2F7);
+  static const bgTertiary = Color(0xFFE5E5EA);
+  static const divider = Color(0xFFD1D1D6);
+  
+  // Gradient Colors for Cards
+  static const List<Color> gradientPrimary = [
+    Color(0xFF0A84FF),
+    Color(0xFF0066CC),
+  ];
+  
+  static const List<Color> gradientSuccess = [
+    Color(0xFF34C759),
+    Color(0xFF2AA047),
+  ];
+  
+  static const List<Color> gradientWarning = [
+    Color(0xFFFF9500),
+    Color(0xFFE68600),
+  ];
+  
+  static const List<Color> gradientError = [
+    Color(0xFFFF3B30),
+    Color(0xFFE62B1F),
+  ];
+  
+  static const List<Color> gradientInfo = [
+    Color(0xFF007AFF),
+    Color(0xFF005FCC),
+  ];
+  
+  // Chart Colors for fl_chart
+  static const chartBlue = Color(0xFF0A84FF);
+  static const chartGreen = Color(0xFF34C759);
+  static const chartOrange = Color(0xFFFF9500);
+  static const chartRed = Color(0xFFFF3B30);
+  static const chartPurple = Color(0xFF5856D6);
+  static const chartYellow = Color(0xFFFFCC00);
+  static const chartPink = Color(0xFFFF2D55);
+  static const chartTeal = Color(0xFF5AC8FA);
+  
+  // Department Colors (for pie charts)
+  static const departmentIT = Color(0xFF0A84FF);
+  static const departmentHR = Color(0xFF34C759);
+  static const departmentSales = Color(0xFFFF9500);
+  static const departmentMarketing = Color(0xFFFF3B30);
+  static const departmentFinance = Color(0xFF5856D6);
+  
+  // Opacity Levels
+  static const double opacityHigh = 0.87;
+  static const double opacityMedium = 0.60;
+  static const double opacityLow = 0.38;
+  static const double opacityDisabled = 0.12;
+  
+  /// Get status color based on payroll status
+  static Color getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'approved':
+      case 'paid':
+      case 'closed':
+        return success;
+      case 'pending':
+      case 'processing':
+      case 'draft':
+        return warning;
+      case 'rejected':
+      case 'failed':
+      case 'error':
+        return error;
+      case 'review':
+      case 'verified':
+        return info;
+      default:
+        return textSecondary;
+    }
+  }
+  
+  /// Get gradient colors for status
+  static List<Color> getStatusGradient(String status) {
+    switch (status.toLowerCase()) {
+      case 'approved':
+      case 'paid':
+      case 'closed':
+        return gradientSuccess;
+      case 'pending':
+      case 'processing':
+      case 'draft':
+        return gradientWarning;
+      case 'rejected':
+      case 'failed':
+      case 'error':
+        return gradientError;
+      case 'review':
+      case 'verified':
+        return gradientInfo;
+      default:
+        return gradientPrimary;
+    }
+  }
+}
+
 class AppSpacing {
   static const double xs = 4.0;
   static const double sm = 8.0;

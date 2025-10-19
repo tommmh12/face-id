@@ -48,6 +48,14 @@ dependencies:
   # Storage & State Management
   shared_preferences: ^2.2.2
   
+  # Charts & Visualization
+  fl_chart: ^0.69.0
+  
+  # PDF Generation & Export
+  pdf: ^3.10.8
+  printing: ^5.12.0
+  path_provider: ^2.1.2
+  
   # Utils
   intl: ^0.18.1
   uuid: ^4.1.0

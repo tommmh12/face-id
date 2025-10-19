@@ -1,5 +1,6 @@
 import 'dart:convert';
 import '../models/dto/payroll_dtos.dart';
+import '../utils/app_logger.dart';
 import '../utils/http_client.dart';
 import 'api_service.dart';
 
@@ -11,7 +12,9 @@ class PayrollApiService extends BaseApiService {
   /// POST /api/payroll/periods
   /// Tạo kỳ lương mới (Tháng)
   Future<ApiResponse<PayrollPeriodResponse>> createPayrollPeriod(CreatePayrollPeriodRequest request) async {
-    return handleRequest(
+    AppLogger.apiRequest('$_endpoint/periods', method: 'POST', data: request.toJson());
+    
+    final response = await handleRequest(
       () => CustomHttpClient.post(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/periods'),
         headers: ApiConfig.headers,
@@ -19,30 +22,61 @@ class PayrollApiService extends BaseApiService {
       ),
       (json) => PayrollPeriodResponse.fromJson(json),
     );
+    
+    AppLogger.apiResponse(
+      '$_endpoint/periods',
+      success: response.success,
+      message: response.message,
+      data: response.data != null ? 'Period: ${response.data!.periodName}' : null,
+    );
+    
+    return response;
   }
 
   /// GET /api/payroll/periods
   /// Lấy danh sách tất cả kỳ lương
   Future<ApiResponse<List<PayrollPeriodResponse>>> getPayrollPeriods() async {
-    return handleListRequest(
+    AppLogger.apiRequest('$_endpoint/periods', method: 'GET');
+    
+    final response = await handleListRequest(
       () => CustomHttpClient.get(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/periods'),
         headers: ApiConfig.headers,
       ),
       (json) => PayrollPeriodResponse.fromJson(json),
     );
+    
+    AppLogger.apiResponse(
+      '$_endpoint/periods',
+      success: response.success,
+      message: response.message,
+      data: response.data != null ? 'Count: ${response.data!.length}' : null,
+    );
+    
+    return response;
   }
 
   /// GET /api/payroll/periods/{id}
   /// Lấy thông tin kỳ lương theo ID
   Future<ApiResponse<PayrollPeriodResponse>> getPayrollPeriodById(int id) async {
-    return handleRequest(
+    AppLogger.apiRequest('$_endpoint/periods/$id', method: 'GET');
+    
+    final response = await handleRequest(
       () => CustomHttpClient.get(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/periods/$id'),
         headers: ApiConfig.headers,
       ),
       (json) => PayrollPeriodResponse.fromJson(json),
     );
+    
+    AppLogger.apiResponse(
+      '$_endpoint/periods/$id',
+      success: response.success,
+      message: response.message,
+      data: response.data != null ? 'Period: ${response.data!.periodName}' : null,
+    );
+    
+    return response;
   }
 
   // ==================== PAYROLL RULE ====================
@@ -50,7 +84,13 @@ class PayrollApiService extends BaseApiService {
   /// POST /api/payroll/rules
   /// Tạo hoặc cập nhật quy tắc tính lương cho nhân viên
   Future<ApiResponse<PayrollRuleResponse>> createOrUpdatePayrollRule(CreatePayrollRuleRequest request) async {
-    return handleRequest(
+    AppLogger.apiRequest('$_endpoint/rules', method: 'POST', data: {
+      'employeeId': request.employeeId,
+      'baseSalary': request.baseSalary,
+      'standardWorkingDays': request.standardWorkingDays,
+    });
+    
+    final response = await handleRequest(
       () => CustomHttpClient.post(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/rules'),
         headers: ApiConfig.headers,
@@ -58,30 +98,61 @@ class PayrollApiService extends BaseApiService {
       ),
       (json) => PayrollRuleResponse.fromJson(json),
     );
+    
+    AppLogger.apiResponse(
+      '$_endpoint/rules',
+      success: response.success,
+      message: response.message,
+      data: response.data != null ? 'RuleId: ${response.data!.id}' : null,
+    );
+    
+    return response;
   }
 
   /// GET /api/payroll/rules/employee/{employeeId}
   /// Lấy quy tắc tính lương của nhân viên
   Future<ApiResponse<PayrollRuleResponse>> getPayrollRuleByEmployeeId(int employeeId) async {
-    return handleRequest(
+    AppLogger.apiRequest('$_endpoint/rules/employee/$employeeId', method: 'GET');
+    
+    final response = await handleRequest(
       () => CustomHttpClient.get(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/rules/employee/$employeeId'),
         headers: ApiConfig.headers,
       ),
       (json) => PayrollRuleResponse.fromJson(json),
     );
+    
+    AppLogger.apiResponse(
+      '$_endpoint/rules/employee/$employeeId',
+      success: response.success,
+      message: response.message,
+      data: response.data != null ? 'BaseSalary: ${response.data!.baseSalary}' : null,
+    );
+    
+    return response;
   }
 
   /// GET /api/payroll/rules
   /// Lấy tất cả quy tắc tính lương
   Future<ApiResponse<List<PayrollRuleResponse>>> getAllPayrollRules() async {
-    return handleListRequest(
+    AppLogger.apiRequest('$_endpoint/rules', method: 'GET');
+    
+    final response = await handleListRequest(
       () => CustomHttpClient.get(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/rules'),
         headers: ApiConfig.headers,
       ),
       (json) => PayrollRuleResponse.fromJson(json),
     );
+    
+    AppLogger.apiResponse(
+      '$_endpoint/rules',
+      success: response.success,
+      message: response.message,
+      data: response.data != null ? 'Count: ${response.data!.length}' : null,
+    );
+    
+    return response;
   }
 
   // ==================== ALLOWANCE ====================
@@ -89,7 +160,13 @@ class PayrollApiService extends BaseApiService {
   /// POST /api/payroll/allowances
   /// Tạo phụ cấp hoặc khấu trừ cho nhân viên
   Future<ApiResponse<AllowanceResponse>> createAllowance(CreateAllowanceRequest request) async {
-    return handleRequest(
+    AppLogger.apiRequest('$_endpoint/allowances', method: 'POST', data: {
+      'employeeId': request.employeeId,
+      'allowanceType': request.allowanceType,
+      'amount': request.amount,
+    });
+    
+    final response = await handleRequest(
       () => CustomHttpClient.post(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/allowances'),
         headers: ApiConfig.headers,
@@ -97,18 +174,38 @@ class PayrollApiService extends BaseApiService {
       ),
       (json) => AllowanceResponse.fromJson(json),
     );
+    
+    AppLogger.apiResponse(
+      '$_endpoint/allowances',
+      success: response.success,
+      message: response.message,
+      data: response.data != null ? 'AllowanceId: ${response.data!.id}' : null,
+    );
+    
+    return response;
   }
 
   /// GET /api/payroll/allowances/employee/{employeeId}
   /// Lấy danh sách phụ cấp/khấu trừ của nhân viên
   Future<ApiResponse<List<AllowanceResponse>>> getEmployeeAllowances(int employeeId) async {
-    return handleListRequest(
+    AppLogger.apiRequest('$_endpoint/allowances/employee/$employeeId', method: 'GET');
+    
+    final response = await handleListRequest(
       () => CustomHttpClient.get(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/allowances/employee/$employeeId'),
         headers: ApiConfig.headers,
       ),
       (json) => AllowanceResponse.fromJson(json),
     );
+    
+    AppLogger.apiResponse(
+      '$_endpoint/allowances/employee/$employeeId',
+      success: response.success,
+      message: response.message,
+      data: response.data != null ? 'Count: ${response.data!.length}' : null,
+    );
+    
+    return response;
   }
 
   // ==================== PAYROLL GENERATION (CORE) ====================
@@ -117,13 +214,26 @@ class PayrollApiService extends BaseApiService {
   /// 🔥 MAIN ENDPOINT: Tính lương cho tất cả nhân viên trong kỳ
   /// Áp dụng 6 bước logic: Chấm công -> OT -> Gross -> BH -> PIT -> Net
   Future<ApiResponse<GeneratePayrollResponse>> generatePayroll(int periodId) async {
-    return handleRequest(
+    AppLogger.apiRequest('$_endpoint/generate/$periodId', method: 'POST');
+    
+    final response = await handleRequest(
       () => CustomHttpClient.post(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/generate/$periodId'),
         headers: ApiConfig.headers,
       ),
       (json) => GeneratePayrollResponse.fromJson(json),
     );
+    
+    AppLogger.apiResponse(
+      '$_endpoint/generate/$periodId',
+      success: response.success,
+      message: response.message,
+      data: response.data != null 
+        ? 'Total: ${response.data!.totalEmployees}, Success: ${response.data!.successCount}, Failed: ${response.data!.failedCount}'
+        : null,
+    );
+    
+    return response;
   }
 
   // ==================== PAYROLL REPORTS ====================
@@ -131,25 +241,236 @@ class PayrollApiService extends BaseApiService {
   /// GET /api/payroll/summary/{periodId}
   /// Lấy tổng hợp bảng lương (Summary) của kỳ
   Future<ApiResponse<PayrollSummaryResponse>> getPayrollSummary(int periodId) async {
-    return handleRequest(
+    AppLogger.apiRequest('$_endpoint/summary/$periodId', method: 'GET');
+    
+    final response = await handleRequest(
       () => CustomHttpClient.get(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/summary/$periodId'),
         headers: ApiConfig.headers,
       ),
       (json) => PayrollSummaryResponse.fromJson(json),
     );
+    
+    AppLogger.apiResponse(
+      '$_endpoint/summary/$periodId',
+      success: response.success,
+      message: response.message,
+      data: response.data != null 
+        ? 'Employees: ${response.data!.totalEmployees}, NetSalary: ${response.data!.totalNetSalary}'
+        : null,
+    );
+    
+    return response;
   }
 
   /// GET /api/payroll/records/period/{periodId}/employee/{employeeId}
   /// Lấy bảng lương của 1 nhân viên trong kỳ
   Future<ApiResponse<PayrollRecordResponse>> getEmployeePayroll(int periodId, int employeeId) async {
-    return handleRequest(
+    AppLogger.apiRequest('$_endpoint/records/period/$periodId/employee/$employeeId', method: 'GET');
+    
+    final response = await handleRequest(
       () => CustomHttpClient.get(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/records/period/$periodId/employee/$employeeId'),
         headers: ApiConfig.headers,
       ),
       (json) => PayrollRecordResponse.fromJson(json),
     );
+    
+    AppLogger.apiResponse(
+      '$_endpoint/records/period/$periodId/employee/$employeeId',
+      success: response.success,
+      message: response.message,
+      data: response.data != null 
+        ? 'Employee: ${response.data!.employeeName}, NetSalary: ${response.data!.netSalary}'
+        : null,
+    );
+    
+    return response;
+  }
+
+  // ==================== EXTENDED FEATURES ====================
+
+  /// GET /api/payroll/records/period/{periodId}
+  /// Lấy danh sách tất cả bảng lương nhân viên trong kỳ (REAL DATA)
+  /// ✅ FIXED: Backend trả về object { period, records, totalRecords }, không phải array
+  Future<ApiResponse<PayrollRecordsListResponse>> getPayrollRecords(int periodId) async {
+    AppLogger.apiRequest('$_endpoint/records/period/$periodId', method: 'GET');
+    
+    try {
+      // Get raw HTTP response first for debugging
+      final httpResponse = await CustomHttpClient.get(
+        Uri.parse('${ApiConfig.baseUrl}$_endpoint/records/period/$periodId'),
+        headers: ApiConfig.headers,
+      );
+      
+      // 🔍 DEBUG: Log raw response body to see what backend actually returns
+      AppLogger.debug('Raw response body: ${httpResponse.body}', tag: 'PayrollAPI');
+      
+      // Now parse using handleRequest
+      final response = await handleRequest(
+        () => Future.value(httpResponse),
+        (json) => PayrollRecordsListResponse.fromJson(json),
+      );
+      
+      // 🔍 DEBUG: Log parsed data details
+      if (response.data != null) {
+        AppLogger.debug(
+          'Parsed data - records.length: ${response.data!.records.length}, totalRecords: ${response.data!.totalRecords}, periodName: ${response.data!.periodName ?? "null"}',
+          tag: 'PayrollAPI',
+        );
+      }
+      
+      AppLogger.apiResponse(
+        '$_endpoint/records/period/$periodId',
+        success: response.success,
+        message: response.message,
+        data: response.data != null ? 'Records: ${response.data!.records.length}, Total: ${response.data!.totalRecords}' : null,
+      );
+      
+      return response;
+    } catch (e, stackTrace) {
+      AppLogger.error(
+        'Failed to get payroll records',
+        error: e,
+        stackTrace: stackTrace,
+        tag: 'PayrollAPI',
+      );
+      return ApiResponse.error('Failed to get payroll records: $e');
+    }
+  }
+
+  /// POST /api/payroll/adjustments
+  /// Tạo điều chỉnh lương (thưởng, phạt, phụ cấp đột xuất)
+  Future<ApiResponse<SalaryAdjustmentResponse>> createSalaryAdjustment(CreateSalaryAdjustmentRequest request) async {
+    AppLogger.apiRequest('$_endpoint/adjustments', method: 'POST', data: {
+      'employeeId': request.employeeId,
+      'periodId': request.periodId,
+      'adjustmentType': request.adjustmentType,
+      'amount': request.amount,
+    });
+    
+    final response = await handleRequest(
+      () => CustomHttpClient.post(
+        Uri.parse('${ApiConfig.baseUrl}$_endpoint/adjustments'),
+        headers: ApiConfig.headers,
+        body: json.encode(request.toJson()),
+      ),
+      (json) => SalaryAdjustmentResponse.fromJson(json),
+    );
+    
+    AppLogger.apiResponse(
+      '$_endpoint/adjustments',
+      success: response.success,
+      message: response.message,
+      data: response.data != null ? 'Type: ${response.data!.adjustmentType}, Amount: ${response.data!.amount}' : null,
+    );
+    
+    return response;
+  }
+
+  /// GET /api/payroll/adjustments/employee/{employeeId}
+  /// Lấy danh sách điều chỉnh lương của nhân viên
+  Future<ApiResponse<List<SalaryAdjustmentResponse>>> getEmployeeAdjustments(int employeeId) async {
+    AppLogger.apiRequest('$_endpoint/adjustments/employee/$employeeId', method: 'GET');
+    
+    final response = await handleListRequest(
+      () => CustomHttpClient.get(
+        Uri.parse('${ApiConfig.baseUrl}$_endpoint/adjustments/employee/$employeeId'),
+        headers: ApiConfig.headers,
+      ),
+      (json) => SalaryAdjustmentResponse.fromJson(json),
+    );
+    
+    AppLogger.apiResponse(
+      '$_endpoint/adjustments/employee/$employeeId',
+      success: response.success,
+      message: response.message,
+      data: response.data != null ? 'Adjustments: ${response.data!.length}' : null,
+    );
+    
+    return response;
+  }
+
+  /// POST /api/payroll/attendance/correct
+  /// Chỉnh sửa chấm công (sửa ngày công, giờ OT)
+  Future<ApiResponse<AttendanceCorrectionResponse>> correctAttendance(CorrectAttendanceRequest request) async {
+    AppLogger.apiRequest('$_endpoint/attendance/correct', method: 'POST', data: {
+      'employeeId': request.employeeId,
+      'periodId': request.periodId,
+      'date': request.date.toString(),
+      'workingDays': request.workingDays,
+      'overtimeHours': request.overtimeHours,
+    });
+    
+    final response = await handleRequest(
+      () => CustomHttpClient.post(
+        Uri.parse('${ApiConfig.baseUrl}$_endpoint/attendance/correct'),
+        headers: ApiConfig.headers,
+        body: json.encode(request.toJson()),
+      ),
+      (json) => AttendanceCorrectionResponse.fromJson(json),
+    );
+    
+    AppLogger.apiResponse(
+      '$_endpoint/attendance/correct',
+      success: response.success,
+      message: response.message,
+      data: response.data != null ? 'Employee: ${response.data!.employeeId}, Success: ${response.data!.success}' : null,
+    );
+    
+    return response;
+  }
+
+  /// POST /api/payroll/recalculate/{periodId}
+  /// Tính lại toàn bộ lương trong kỳ (sau khi chỉnh sửa)
+  Future<ApiResponse<GeneratePayrollResponse>> recalculatePayroll(int periodId) async {
+    AppLogger.apiRequest('$_endpoint/recalculate/$periodId', method: 'POST');
+    
+    final response = await handleRequest(
+      () => CustomHttpClient.post(
+        Uri.parse('${ApiConfig.baseUrl}$_endpoint/recalculate/$periodId'),
+        headers: ApiConfig.headers,
+      ),
+      (json) => GeneratePayrollResponse.fromJson(json),
+    );
+    
+    AppLogger.apiResponse(
+      '$_endpoint/recalculate/$periodId',
+      success: response.success,
+      message: response.message,
+      data: response.data != null 
+        ? 'Total: ${response.data!.totalEmployees}, Success: ${response.data!.successCount}'
+        : null,
+    );
+    
+    return response;
+  }
+
+  /// PUT /api/payroll/periods/{periodId}/status
+  /// Cập nhật trạng thái kỳ lương (Draft/Processing/Closed)
+  Future<ApiResponse<PayrollPeriodResponse>> updatePeriodStatus(int periodId, UpdatePeriodStatusRequest request) async {
+    AppLogger.apiRequest('$_endpoint/periods/$periodId/status', method: 'PUT', data: {
+      'status': request.status,
+      'reason': request.reason,
+    });
+    
+    final response = await handleRequest(
+      () => CustomHttpClient.put(
+        Uri.parse('${ApiConfig.baseUrl}$_endpoint/periods/$periodId/status'),
+        headers: ApiConfig.headers,
+        body: json.encode(request.toJson()),
+      ),
+      (json) => PayrollPeriodResponse.fromJson(json),
+    );
+    
+    AppLogger.apiResponse(
+      '$_endpoint/periods/$periodId/status',
+      success: response.success,
+      message: response.message,
+      data: response.data != null ? 'Status: ${request.status}' : null,
+    );
+    
+    return response;
   }
 
   // ==================== UTILITIES ====================
@@ -157,12 +478,66 @@ class PayrollApiService extends BaseApiService {
   /// GET /api/payroll/health
   /// Health check endpoint
   Future<ApiResponse<Map<String, dynamic>>> healthCheck() async {
-    return handleRequest(
+    AppLogger.apiRequest('$_endpoint/health', method: 'GET');
+    
+    final response = await handleRequest(
       () => CustomHttpClient.get(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/health'),
         headers: ApiConfig.headers,
       ),
       (json) => json,
     );
+    
+    AppLogger.apiResponse(
+      '$_endpoint/health',
+      success: response.success,
+      message: response.message,
+    );
+    
+    return response;
+  }
+
+  // ==================== AUDIT LOG (NEW - V3) ====================
+
+  /// GET /api/payroll/audit
+  /// Lấy danh sách audit logs với filters
+  Future<ApiResponse<List<AuditLogResponse>>> getAuditLogs({
+    String? entityType,
+    int? employeeId,
+    String? action,
+    DateTime? fromDate,
+    DateTime? toDate,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    final queryParams = <String, String>{
+      'page': page.toString(),
+      'pageSize': pageSize.toString(),
+    };
+    
+    if (entityType != null) queryParams['entityType'] = entityType;
+    if (employeeId != null) queryParams['employeeId'] = employeeId.toString();
+    if (action != null) queryParams['action'] = action;
+    if (fromDate != null) queryParams['fromDate'] = fromDate.toIso8601String();
+    if (toDate != null) queryParams['toDate'] = toDate.toIso8601String();
+    
+    final uri = Uri.parse('${ApiConfig.baseUrl}$_endpoint/audit')
+        .replace(queryParameters: queryParams);
+    
+    AppLogger.apiRequest('$_endpoint/audit', method: 'GET', data: queryParams);
+    
+    final response = await handleListRequest(
+      () => CustomHttpClient.get(uri, headers: ApiConfig.headers),
+      (json) => AuditLogResponse.fromJson(json),
+    );
+    
+    AppLogger.apiResponse(
+      '$_endpoint/audit',
+      success: response.success,
+      message: response.message,
+      data: response.data != null ? 'Count: ${response.data!.length}' : null,
+    );
+    
+    return response;
   }
 }

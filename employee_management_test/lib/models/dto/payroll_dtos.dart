@@ -250,12 +250,14 @@ class GeneratePayrollResponse {
 
   factory GeneratePayrollResponse.fromJson(Map<String, dynamic> json) {
     return GeneratePayrollResponse(
-      success: json['success'],
-      message: json['message'],
-      totalEmployees: json['totalEmployees'],
-      successCount: json['successCount'],
-      failedCount: json['failedCount'],
-      errors: List<String>.from(json['errors'] ?? []),
+      success: json['success'] ?? false,
+      message: json['message']?.toString() ?? '',
+      totalEmployees: json['totalEmployees'] ?? 0,
+      successCount: json['successCount'] ?? 0,
+      failedCount: json['failedCount'] ?? 0,
+      errors: json['errors'] != null 
+        ? List<String>.from(json['errors']) 
+        : [],
     );
   }
 }
@@ -355,6 +357,277 @@ class PayrollRecordResponse {
           ? DateTime.tryParse(json['calculatedAt']) ?? DateTime.now()
           : DateTime.now(),
       notes: json['notes']?.toString(),
+    );
+  }
+}
+
+// ==================== SALARY ADJUSTMENT DTOs ====================
+
+class CreateSalaryAdjustmentRequest {
+  final int employeeId;
+  final int periodId;
+  final String adjustmentType; // "Bonus", "Penalty", "Allowance", "Deduction"
+  final String reason;
+  final double amount;
+  final DateTime adjustmentDate;
+  final String? approvedBy;
+  final String? notes;
+
+  CreateSalaryAdjustmentRequest({
+    required this.employeeId,
+    required this.periodId,
+    required this.adjustmentType,
+    required this.reason,
+    required this.amount,
+    required this.adjustmentDate,
+    this.approvedBy,
+    this.notes,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'employeeId': employeeId,
+      'periodId': periodId,
+      'adjustmentType': adjustmentType,
+      'reason': reason,
+      'amount': amount,
+      'adjustmentDate': adjustmentDate.toIso8601String(),
+      'approvedBy': approvedBy,
+      'notes': notes,
+    };
+  }
+}
+
+class SalaryAdjustmentResponse {
+  final int id;
+  final int employeeId;
+  final int periodId;
+  final String adjustmentType;
+  final String reason;
+  final double amount;
+  final DateTime adjustmentDate;
+  final String? approvedBy;
+  final String? notes;
+  final DateTime createdAt;
+
+  SalaryAdjustmentResponse({
+    required this.id,
+    required this.employeeId,
+    required this.periodId,
+    required this.adjustmentType,
+    required this.reason,
+    required this.amount,
+    required this.adjustmentDate,
+    this.approvedBy,
+    this.notes,
+    required this.createdAt,
+  });
+
+  factory SalaryAdjustmentResponse.fromJson(Map<String, dynamic> json) {
+    return SalaryAdjustmentResponse(
+      id: json['id'] ?? 0,
+      employeeId: json['employeeId'] ?? 0,
+      periodId: json['periodId'] ?? 0,
+      adjustmentType: json['adjustmentType']?.toString() ?? '',
+      reason: json['reason']?.toString() ?? '',
+      amount: (json['amount'] ?? 0).toDouble(),
+      adjustmentDate: json['adjustmentDate'] != null
+          ? DateTime.tryParse(json['adjustmentDate']) ?? DateTime.now()
+          : DateTime.now(),
+      approvedBy: json['approvedBy']?.toString(),
+      notes: json['notes']?.toString(),
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt']) ?? DateTime.now()
+          : DateTime.now(),
+    );
+  }
+}
+
+// ==================== ATTENDANCE CORRECTION DTOs ====================
+
+class CorrectAttendanceRequest {
+  final int employeeId;
+  final int periodId;
+  final DateTime date;
+  final int? workingDays;
+  final double? overtimeHours;
+  final String reason;
+  final String correctedBy;
+
+  CorrectAttendanceRequest({
+    required this.employeeId,
+    required this.periodId,
+    required this.date,
+    this.workingDays,
+    this.overtimeHours,
+    required this.reason,
+    required this.correctedBy,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'employeeId': employeeId,
+      'periodId': periodId,
+      'date': date.toIso8601String(),
+      'workingDays': workingDays,
+      'overtimeHours': overtimeHours,
+      'reason': reason,
+      'correctedBy': correctedBy,
+    };
+  }
+}
+
+class AttendanceCorrectionResponse {
+  final bool success;
+  final String message;
+  final int employeeId;
+  final DateTime date;
+  final int? oldWorkingDays;
+  final int? newWorkingDays;
+  final double? oldOvertimeHours;
+  final double? newOvertimeHours;
+
+  AttendanceCorrectionResponse({
+    required this.success,
+    required this.message,
+    required this.employeeId,
+    required this.date,
+    this.oldWorkingDays,
+    this.newWorkingDays,
+    this.oldOvertimeHours,
+    this.newOvertimeHours,
+  });
+
+  factory AttendanceCorrectionResponse.fromJson(Map<String, dynamic> json) {
+    return AttendanceCorrectionResponse(
+      success: json['success'] ?? false,
+      message: json['message']?.toString() ?? '',
+      employeeId: json['employeeId'] ?? 0,
+      date: json['date'] != null
+          ? DateTime.tryParse(json['date']) ?? DateTime.now()
+          : DateTime.now(),
+      oldWorkingDays: json['oldWorkingDays'],
+      newWorkingDays: json['newWorkingDays'],
+      oldOvertimeHours: json['oldOvertimeHours']?.toDouble(),
+      newOvertimeHours: json['newOvertimeHours']?.toDouble(),
+    );
+  }
+}
+
+// ==================== PERIOD STATUS UPDATE DTOs ====================
+
+class UpdatePeriodStatusRequest {
+  final String status; // "Draft", "Processing", "Closed", "Reopened"
+  final String? reason;
+  final String? updatedBy;
+
+  UpdatePeriodStatusRequest({
+    required this.status,
+    this.reason,
+    this.updatedBy,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'status': status,
+      'reason': reason,
+      'updatedBy': updatedBy,
+    };
+  }
+}
+// ==================== PAYROLL RECORDS LIST RESPONSE ====================
+
+/// Wrapper cho response của GET /api/payroll/records/period/{periodId}
+/// Backend trả về: { success, message, periodId, periodName, isClosed, totalRecords, data: [...] }
+/// ✅ FIXED: Backend đặt records trong key "data", không phải "records"
+class PayrollRecordsListResponse {
+  final int? periodId;
+  final String? periodName;
+  final bool? isClosed;
+  final List<PayrollRecordResponse> records;
+  final int totalRecords;
+
+  PayrollRecordsListResponse({
+    this.periodId,
+    this.periodName,
+    this.isClosed,
+    required this.records,
+    required this.totalRecords,
+  });
+
+  factory PayrollRecordsListResponse.fromJson(Map<String, dynamic> json) {
+    // 🔍 Backend structure:
+    // {
+    //   "success": true,
+    //   "message": "...",
+    //   "periodId": 1,
+    //   "periodName": "Kỳ lương tháng 8/2025",
+    //   "isClosed": false,
+    //   "totalRecords": 1,
+    //   "data": [{ payroll record objects }]  ← Records ở đây!
+    // }
+    
+    return PayrollRecordsListResponse(
+      periodId: json['periodId'],
+      periodName: json['periodName']?.toString(),
+      isClosed: json['isClosed'],
+      records: json['data'] != null && json['data'] is List  // ← Đổi từ 'records' sang 'data'
+          ? (json['data'] as List)
+              .map((item) => PayrollRecordResponse.fromJson(item as Map<String, dynamic>))
+              .toList()
+          : [],
+      totalRecords: json['totalRecords'] ?? 0,
+    );
+  }
+}
+
+// ==================== AUDIT LOG DTOs (NEW - V3) ====================
+
+class AuditLogResponse {
+  final int id;
+  final String action; // INSERT, UPDATE, DELETE
+  final String entityType; // PayrollRecord, SalaryAdjustment, etc.
+  final int entityId;
+  final int? employeeId;
+  final int userId;
+  final String? userName;
+  final DateTime timestamp;
+  final String? fieldName;
+  final String? oldValue;
+  final String? newValue;
+  final String? reason;
+
+  AuditLogResponse({
+    required this.id,
+    required this.action,
+    required this.entityType,
+    required this.entityId,
+    this.employeeId,
+    required this.userId,
+    this.userName,
+    required this.timestamp,
+    this.fieldName,
+    this.oldValue,
+    this.newValue,
+    this.reason,
+  });
+
+  factory AuditLogResponse.fromJson(Map<String, dynamic> json) {
+    return AuditLogResponse(
+      id: json['id'] as int,
+      action: json['action']?.toString() ?? '',
+      entityType: json['entityType']?.toString() ?? '',
+      entityId: json['entityId'] as int,
+      employeeId: json['employeeId'] as int?,
+      userId: json['userId'] as int,
+      userName: json['userName']?.toString(),
+      timestamp: json['timestamp'] != null
+          ? DateTime.tryParse(json['timestamp']) ?? DateTime.now()
+          : DateTime.now(),
+      fieldName: json['fieldName']?.toString(),
+      oldValue: json['oldValue']?.toString(),
+      newValue: json['newValue']?.toString(),
+      reason: json['reason']?.toString(),
     );
   }
 }

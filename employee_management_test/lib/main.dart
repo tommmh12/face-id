@@ -9,6 +9,12 @@ import 'screens/department/department_management_screen.dart';
 import 'screens/face/face_register_screen.dart';
 import 'screens/face/face_checkin_screen.dart';
 import 'screens/payroll/payroll_dashboard_screen.dart';
+import 'screens/payroll/payroll_report_screen.dart';
+import 'screens/payroll/payroll_rule_setup_screen.dart';
+import 'screens/payroll/allowance_management_screen.dart';
+import 'screens/payroll/employee_payroll_detail_screen.dart';
+import 'screens/payroll/employee_salary_detail_screen_v2.dart';
+import 'screens/payroll/payroll_chart_screen.dart';
 import 'screens/api_test_screen.dart';
 import 'utils/camera_helper.dart';
 
@@ -103,6 +109,7 @@ class MyApp extends StatelessWidget {
         '/face/register': (context) => const FaceRegisterScreen(),
         '/face/checkin': (context) => const FaceCheckinScreen(),
         '/payroll': (context) => const PayrollDashboardScreen(),
+        '/payroll/chart': (context) => const PayrollChartScreen(),
         '/api-test': (context) => const ApiTestScreen(),
       },
       onGenerateRoute: (settings) {
@@ -123,6 +130,54 @@ class MyApp extends StatelessWidget {
             ),
           );
         }
+        
+        // Payroll routes with parameters
+        if (settings.name == '/payroll/report') {
+          final args = settings.arguments as Map<String, dynamic>;
+          return MaterialPageRoute(
+            builder: (context) => PayrollReportScreen(
+              periodId: args['periodId'],
+            ),
+          );
+        }
+        if (settings.name == '/payroll/rule-setup') {
+          final args = settings.arguments as Map<String, dynamic>;
+          return MaterialPageRoute(
+            builder: (context) => PayrollRuleSetupScreen(
+              employeeId: args['employeeId'],
+              employeeName: args['employeeName'],
+            ),
+          );
+        }
+        if (settings.name == '/payroll/allowance') {
+          final args = settings.arguments as Map<String, dynamic>;
+          return MaterialPageRoute(
+            builder: (context) => AllowanceManagementScreen(
+              employeeId: args['employeeId'],
+              employeeName: args['employeeName'],
+            ),
+          );
+        }
+        if (settings.name == '/payroll/employee-detail') {
+          final args = settings.arguments as Map<String, dynamic>;
+          return MaterialPageRoute(
+            builder: (context) => EmployeePayrollDetailScreen(
+              periodId: args['periodId'],
+              employeeId: args['employeeId'],
+              employeeName: args['employeeName'],
+            ),
+          );
+        }
+        if (settings.name == '/payroll/employee-detail-v2') {
+          final args = settings.arguments as Map<String, dynamic>;
+          return MaterialPageRoute(
+            builder: (context) => EmployeeSalaryDetailScreenV2(
+              periodId: args['periodId'],
+              employeeId: args['employeeId'],
+            ),
+          );
+        }
+        
         return null;
       },
     );
