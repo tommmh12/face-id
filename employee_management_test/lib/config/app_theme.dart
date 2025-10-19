@@ -50,6 +50,32 @@ class AppColors {
   static const borderColor = Color(0xFFE0E0E0);
   static const borderLight = Color(0xFFF0F0F0);
 
+  // Vibrant Gradients - Modern & Eye-catching
+  static const gradientBlue = [Color(0xFF667eea), Color(0xFF764ba2)];
+  static const gradientPurple = [Color(0xFFa8edea), Color(0xFFfed6e3)];
+  static const gradientOrange = [Color(0xFFff9a56), Color(0xFFff6a88)];
+  static const gradientGreen = [Color(0xFF0ba360), Color(0xFF3cba92)];
+  static const gradientPink = [Color(0xFFf093fb), Color(0xFFf5576c)];
+  static const gradientSunset = [Color(0xFFfa709a), Color(0xFFfee140)];
+  static const gradientOcean = [Color(0xFF00d2ff), Color(0xFF3a7bd5)];
+  static const gradientFirework = [Color(0xFFff6b6b), Color(0xFFfeca57)];
+  static const gradientNorthern = [Color(0xFF00f260), Color(0xFF0575e6)];
+  static const gradientTwilight = [
+    Color(0xFF7303c0),
+    Color(0xFFec38bc),
+    Color(0xFFfdeff9),
+  ];
+
+  // Soft Gradients - Gentle & Professional
+  static const gradientSoftBlue = [Color(0xFF5B8FD8), Color(0xFF7AA8E5)];
+  static const gradientSoftGreen = [Color(0xFF52B558), Color(0xFF6FCC75)];
+  static const gradientSoftOrange = [Color(0xFFFF8A5B), Color(0xFFFF9D73)];
+  static const gradientSoftPurple = [Color(0xFF8B68CD), Color(0xFFA88DD9)];
+  static const gradientSoftTeal = [Color(0xFF3FA89D), Color(0xFF5EBDB3)];
+  static const gradientSoftPink = [Color(0xFFE37B9E), Color(0xFFF095B3)];
+  static const gradientSoftCyan = [Color(0xFF3EC4D8), Color(0xFF5DD4E8)];
+  static const gradientSoftLavender = [Color(0xFFA88DD9), Color(0xFFC3B1E1)];
+
   // Overlay & Shadow
   static const overlayDark = Color(0x80000000);
   static const overlayLight = Color(0x33000000);

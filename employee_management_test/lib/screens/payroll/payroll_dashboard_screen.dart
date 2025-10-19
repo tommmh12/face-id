@@ -294,15 +294,18 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
                           ),
                         ),
                         isExpanded: true,
+                        menuMaxHeight: 300,
                         items: _periods
                             .map(
                               (period) => DropdownMenuItem<int>(
                                 value: period.id,
                                 child: Text(
-                                  '${period.periodName}\n${DateFormat('dd/MM/yyyy').format(period.startDate)} - ${DateFormat('dd/MM/yyyy').format(period.endDate)}',
-                                  style: AppTextStyles.bodySmall,
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 2,
+                                  period.periodName,
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppColors.textPrimary,
+                                  ),
                                 ),
                               ),
                             )
@@ -319,6 +322,29 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
                           }
                         },
                       ),
+                      // Display selected period date range
+                      if (_selectedPeriodId != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: AppSpacing.sm),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.calendar_today,
+                                size: 14,
+                                color: AppColors.textSecondary,
+                              ),
+                              const SizedBox(width: AppSpacing.xs),
+                              Text(
+                                '${DateFormat('dd/MM/yyyy').format(_periods.firstWhere((p) => p.id == _selectedPeriodId).startDate)} - ${DateFormat('dd/MM/yyyy').format(_periods.firstWhere((p) => p.id == _selectedPeriodId).endDate)}',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                     ],
                   ),
                 ),
