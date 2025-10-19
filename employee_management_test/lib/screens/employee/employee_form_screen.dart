@@ -8,10 +8,7 @@ import '../../models/dto/employee_dtos.dart';
 class EmployeeFormScreen extends StatefulWidget {
   final Employee? employee; // Null = Create, Not null = Edit
 
-  const EmployeeFormScreen({
-    super.key,
-    this.employee,
-  });
+  const EmployeeFormScreen({super.key, this.employee});
 
   @override
   State<EmployeeFormScreen> createState() => _EmployeeFormScreenState();
@@ -74,9 +71,9 @@ class _EmployeeFormScreenState extends State<EmployeeFormScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi tải phòng ban: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi tải phòng ban: $e')));
       }
     }
   }
@@ -86,13 +83,16 @@ class _EmployeeFormScreenState extends State<EmployeeFormScreen> {
       context: context,
       initialDate: isJoinDate
           ? (_joinDate ?? DateTime.now())
-          : (_dateOfBirth ?? DateTime.now().subtract(const Duration(days: 365 * 25))),
+          : (_dateOfBirth ??
+                DateTime.now().subtract(const Duration(days: 365 * 25))),
       firstDate: DateTime(1950),
       lastDate: DateTime.now(),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(primary: AppColors.primaryBlue),
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.primaryBlue,
+            ),
           ),
           child: child!,
         );
@@ -116,9 +116,9 @@ class _EmployeeFormScreenState extends State<EmployeeFormScreen> {
     }
 
     if (_selectedDepartmentId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng chọn phòng ban')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Vui lòng chọn phòng ban')));
       return;
     }
 
@@ -129,10 +129,16 @@ class _EmployeeFormScreenState extends State<EmployeeFormScreen> {
     try {
       final request = CreateEmployeeRequest(
         fullName: _fullNameController.text.trim(),
-        email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
-        phoneNumber: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
+        email: _emailController.text.trim().isEmpty
+            ? null
+            : _emailController.text.trim(),
+        phoneNumber: _phoneController.text.trim().isEmpty
+            ? null
+            : _phoneController.text.trim(),
         departmentId: _selectedDepartmentId!,
-        position: _positionController.text.trim().isEmpty ? null : _positionController.text.trim(),
+        position: _positionController.text.trim().isEmpty
+            ? null
+            : _positionController.text.trim(),
         dateOfBirth: _dateOfBirth,
       );
 
@@ -143,7 +149,11 @@ class _EmployeeFormScreenState extends State<EmployeeFormScreen> {
       if (response.success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(isEditMode ? 'Cập nhật thành công!' : 'Thêm nhân viên thành công!'),
+            content: Text(
+              isEditMode
+                  ? 'Cập nhật thành công!'
+                  : 'Thêm nhân viên thành công!',
+            ),
             backgroundColor: AppColors.successColor,
           ),
         );
@@ -188,7 +198,13 @@ class _EmployeeFormScreenState extends State<EmployeeFormScreen> {
     return Scaffold(
       backgroundColor: AppColors.bgColor,
       appBar: AppBar(
-        title: Text(isEditMode ? 'Chỉnh Sửa Nhân Viên' : 'Thêm Nhân Viên'),
+        title: Text(
+          isEditMode ? 'Chỉnh Sửa Nhân Viên' : 'Thêm Nhân Viên',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: AppColors.primaryBlue,
+        foregroundColor: Colors.white,
+        elevation: 0,
       ),
       body: Form(
         key: _formKey,
@@ -197,6 +213,65 @@ class _EmployeeFormScreenState extends State<EmployeeFormScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Header Card
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [AppColors.primaryBlue, AppColors.primaryDark],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(AppBorderRadius.large),
+                  boxShadow: AppShadows.medium,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(
+                          AppBorderRadius.medium,
+                        ),
+                      ),
+                      child: Icon(
+                        isEditMode ? Icons.edit : Icons.person_add,
+                        color: Colors.white,
+                        size: 32,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.lg),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isEditMode
+                                ? 'Cập nhật thông tin'
+                                : 'Thêm nhân viên mới',
+                            style: AppTextStyles.h3.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            isEditMode
+                                ? 'Chỉnh sửa thông tin nhân viên'
+                                : 'Điền thông tin nhân viên mới',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xxl),
+
               // Full Name
               _buildTextField(
                 controller: _fullNameController,
@@ -219,7 +294,9 @@ class _EmployeeFormScreenState extends State<EmployeeFormScreen> {
                 keyboardType: TextInputType.emailAddress,
                 validator: (value) {
                   if (value != null && value.isNotEmpty) {
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                    if (!RegExp(
+                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                    ).hasMatch(value)) {
                       return 'Email không hợp lệ';
                     }
                   }
@@ -299,32 +376,55 @@ class _EmployeeFormScreenState extends State<EmployeeFormScreen> {
               const SizedBox(height: AppSpacing.xxxl),
 
               // Save Button
-              ElevatedButton(
-                onPressed: _isLoading ? null : _saveEmployee,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryBlue,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [AppColors.primaryBlue, AppColors.primaryDark],
                   ),
+                  borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+                  boxShadow: AppShadows.medium,
                 ),
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : Text(
-                        isEditMode ? 'Cập Nhật' : 'Thêm Nhân Viên',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _saveEmployee,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppBorderRadius.medium,
                       ),
+                    ),
+                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(isEditMode ? Icons.check : Icons.add_circle),
+                            const SizedBox(width: 8),
+                            Text(
+                              isEditMode
+                                  ? 'Cập Nhật Thông Tin'
+                                  : 'Thêm Nhân Viên',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
               ),
             ],
           ),
@@ -385,10 +485,7 @@ class _EmployeeFormScreenState extends State<EmployeeFormScreen> {
           border: InputBorder.none,
         ),
         items: _departments.map((dept) {
-          return DropdownMenuItem(
-            value: dept.id,
-            child: Text(dept.name),
-          );
+          return DropdownMenuItem(value: dept.id, child: Text(dept.name));
         }).toList(),
         onChanged: (value) {
           setState(() {
@@ -440,7 +537,9 @@ class _EmployeeFormScreenState extends State<EmployeeFormScreen> {
                         ? '${date.day}/${date.month}/${date.year}'
                         : 'Chọn ngày',
                     style: AppTextStyles.bodyMedium.copyWith(
-                      color: date != null ? AppColors.textPrimary : AppColors.textSecondary,
+                      color: date != null
+                          ? AppColors.textPrimary
+                          : AppColors.textSecondary,
                     ),
                   ),
                 ],

@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../../models/department.dart';
 import '../../models/dto/employee_dtos.dart';
 import '../../services/employee_api_service.dart';
+import '../../config/app_theme.dart';
 
 class EmployeeCreateScreen extends StatefulWidget {
   const EmployeeCreateScreen({super.key});
@@ -174,27 +175,86 @@ class _EmployeeCreateScreenState extends State<EmployeeCreateScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.bgColor,
       appBar: AppBar(
-        title: const Text('Tạo Nhân Viên Mới'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: const Text(
+          'Tạo Nhân Viên Mới',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: AppColors.primaryBlue,
+        foregroundColor: Colors.white,
+        elevation: 0,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryBlue),
+              ),
+            )
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.xl),
               child: Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Full Name
-                    TextFormField(
-                      controller: _fullNameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Họ và tên *',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.person),
+                    // Header Card
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [AppColors.primaryBlue, AppColors.primaryDark],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(AppBorderRadius.large),
+                        boxShadow: AppShadows.medium,
                       ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white24,
+                              borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+                            ),
+                            child: const Icon(
+                              Icons.person_add,
+                              color: Colors.white,
+                              size: 32,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.lg),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Thêm nhân viên mới',
+                                  style: AppTextStyles.h3.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Điền thông tin cơ bản',
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xxl),
+                    // Full Name
+                    _buildTextField(
+                      controller: _fullNameController,
+                      label: 'Họ và tên *',
+                      icon: Icons.person,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return 'Vui lòng nhập họ và tên';
@@ -205,17 +265,14 @@ class _EmployeeCreateScreenState extends State<EmployeeCreateScreen> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
 
                     // Email
-                    TextFormField(
+                    _buildTextField(
                       controller: _emailController,
+                      label: 'Email',
+                      icon: Icons.email,
                       keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.email),
-                      ),
                       validator: (value) {
                         if (value != null && value.isNotEmpty) {
                           if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
@@ -225,17 +282,14 @@ class _EmployeeCreateScreenState extends State<EmployeeCreateScreen> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
 
                     // Phone Number
-                    TextFormField(
+                    _buildTextField(
                       controller: _phoneController,
+                      label: 'Số điện thoại',
+                      icon: Icons.phone,
                       keyboardType: TextInputType.phone,
-                      decoration: const InputDecoration(
-                        labelText: 'Số điện thoại',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.phone),
-                      ),
                       validator: (value) {
                         if (value != null && value.isNotEmpty) {
                           if (!RegExp(r'^[0-9]{10,11}$').hasMatch(value)) {
@@ -245,89 +299,179 @@ class _EmployeeCreateScreenState extends State<EmployeeCreateScreen> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
 
                     // Department
-                    DropdownButtonFormField<int>(
-                      initialValue: _selectedDepartmentId,
-                      decoration: const InputDecoration(
-                        labelText: 'Phòng ban *',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.business),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+                        boxShadow: AppShadows.small,
                       ),
-                      items: _departments.map((dept) => DropdownMenuItem<int>(
-                        value: dept.id,
-                        child: Text('${dept.code} - ${dept.name}'),
-                      )).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedDepartmentId = value;
-                        });
-                      },
-                      validator: (value) {
-                        if (value == null) {
-                          return 'Vui lòng chọn phòng ban';
-                        }
-                        return null;
-                      },
+                      child: DropdownButtonFormField<int>(
+                        value: _selectedDepartmentId,
+                        decoration: const InputDecoration(
+                          labelText: 'Phòng ban *',
+                          prefixIcon: Icon(Icons.business, color: AppColors.primaryBlue),
+                          border: InputBorder.none,
+                        ),
+                        items: _departments.map((dept) => DropdownMenuItem<int>(
+                          value: dept.id,
+                          child: Text('${dept.code} - ${dept.name}'),
+                        )).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedDepartmentId = value;
+                          });
+                        },
+                        validator: (value) {
+                          if (value == null) {
+                            return 'Vui lòng chọn phòng ban';
+                          }
+                          return null;
+                        },
+                      ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
 
                     // Position
-                    TextFormField(
+                    _buildTextField(
                       controller: _positionController,
-                      decoration: const InputDecoration(
-                        labelText: 'Chức vụ',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.work),
-                      ),
+                      label: 'Chức vụ',
+                      icon: Icons.work,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
 
                     // Date of Birth
                     InkWell(
                       onTap: _selectDateOfBirth,
-                      child: InputDecorator(
-                        decoration: const InputDecoration(
-                          labelText: 'Ngày sinh',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.calendar_today),
+                      child: Container(
+                        padding: const EdgeInsets.all(AppSpacing.lg),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+                          boxShadow: AppShadows.small,
                         ),
-                        child: Text(
-                          _selectedDateOfBirth != null
-                              ? DateFormat('dd/MM/yyyy').format(_selectedDateOfBirth!)
-                              : 'Chọn ngày sinh',
-                          style: TextStyle(
-                            color: _selectedDateOfBirth != null
-                                ? Theme.of(context).textTheme.bodyLarge?.color
-                                : Theme.of(context).hintColor,
-                          ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.calendar_today, color: AppColors.primaryBlue),
+                            const SizedBox(width: AppSpacing.lg),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Ngày sinh',
+                                    style: AppTextStyles.caption.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _selectedDateOfBirth != null
+                                        ? DateFormat('dd/MM/yyyy').format(_selectedDateOfBirth!)
+                                        : 'Chọn ngày sinh',
+                                    style: AppTextStyles.bodyMedium.copyWith(
+                                      color: _selectedDateOfBirth != null
+                                          ? AppColors.textPrimary
+                                          : AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
+                          ],
                         ),
                       ),
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: AppSpacing.xxxl),
 
                     // Submit Button
-                    ElevatedButton(
-                      onPressed: _isSubmitting ? null : _submitForm,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [AppColors.primaryBlue, AppColors.primaryDark],
+                        ),
+                        borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+                        boxShadow: AppShadows.medium,
                       ),
-                      child: _isSubmitting
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text(
-                              'Tạo Nhân Viên',
-                              style: TextStyle(fontSize: 16),
-                            ),
+                      child: ElevatedButton(
+                        onPressed: _isSubmitting ? null : _submitForm,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+                          ),
+                        ),
+                        child: _isSubmitting
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.add_circle),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Tạo Nhân Viên',
+                                    style: AppTextStyles.bodyLarge.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    TextInputType? keyboardType,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      validator: validator,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, color: AppColors.primaryBlue),
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+          borderSide: const BorderSide(color: AppColors.primaryBlue, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+          borderSide: const BorderSide(color: AppColors.errorColor, width: 2),
+        ),
+      ),
     );
   }
 

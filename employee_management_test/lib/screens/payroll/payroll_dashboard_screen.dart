@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/dto/payroll_dtos.dart';
 import '../../services/payroll_api_service.dart';
+import '../../config/app_theme.dart';
 
 class PayrollDashboardScreen extends StatefulWidget {
   const PayrollDashboardScreen({super.key});
@@ -12,7 +13,7 @@ class PayrollDashboardScreen extends StatefulWidget {
 
 class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
   final PayrollApiService _payrollService = PayrollApiService();
-  
+
   List<PayrollPeriodResponse> _periods = [];
   PayrollSummaryResponse? _currentSummary;
   bool _isLoading = true;
@@ -40,7 +41,7 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
             _selectedPeriodId = _periods.first.id;
           }
         });
-        
+
         if (_selectedPeriodId != null) {
           await _loadSummary(_selectedPeriodId!);
         }
@@ -82,7 +83,7 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
         title: const Text('Xác nhận'),
         content: const Text(
           'Bạn có chắc chắn muốn tính lương cho kỳ này?\n'
-          'Quá trình này sẽ tính toán lương cho tất cả nhân viên.'
+          'Quá trình này sẽ tính toán lương cho tất cả nhân viên.',
         ),
         actions: [
           TextButton(
@@ -115,8 +116,10 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
         ),
       );
 
-      final response = await _payrollService.generatePayroll(_selectedPeriodId!);
-      
+      final response = await _payrollService.generatePayroll(
+        _selectedPeriodId!,
+      );
+
       // Close loading dialog
       if (mounted) Navigator.of(context).pop();
 
@@ -154,7 +157,10 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
               Text('Thất bại: ${result.failedCount}'),
               if (result.errors.isNotEmpty) ...[
                 const SizedBox(height: 8),
-                const Text('Lỗi:', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text(
+                  'Lỗi:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 ...result.errors.take(3).map((error) => Text('• $error')),
                 if (result.errors.length > 3)
                   Text('• Và ${result.errors.length - 3} lỗi khác...'),
@@ -174,10 +180,7 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
 
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 
@@ -188,59 +191,122 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.bgColor,
       appBar: AppBar(
-        title: const Text('Quản Lý Lương'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: const Text(
+          'Quản Lý Lương',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: AppColors.primaryBlue,
+        foregroundColor: Colors.white,
+        elevation: 0,
         actions: [
           IconButton(
             onPressed: _loadData,
             icon: const Icon(Icons.refresh),
+            tooltip: 'Tải lại dữ liệu',
           ),
         ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 64,
-                        color: Colors.red[300],
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        _error!,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _loadData,
-                        child: const Text('Thử lại'),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+                  const SizedBox(height: 16),
+                  Text(
+                    _error!,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 16),
                   ),
-                )
-              : Column(
-                  children: [
-                    // Period Selection
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      child: DropdownButtonFormField<int>(
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _loadData,
+                    child: const Text('Thử lại'),
+                  ),
+                ],
+              ),
+            )
+          : Column(
+              children: [
+                // Period Selection
+                Container(
+                  margin: const EdgeInsets.all(AppSpacing.lg),
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(AppBorderRadius.large),
+                    boxShadow: AppShadows.medium,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [
+                                  AppColors.primaryBlue,
+                                  AppColors.primaryDark,
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(
+                                AppBorderRadius.small,
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.calendar_month,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Text(
+                            'Kỳ lương',
+                            style: AppTextStyles.h4.copyWith(
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      DropdownButtonFormField<int>(
                         key: ValueKey(_selectedPeriodId),
                         value: _selectedPeriodId,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Chọn kỳ lương',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.calendar_month),
+                          filled: true,
+                          fillColor: AppColors.bgColor,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppBorderRadius.medium,
+                            ),
+                            borderSide: BorderSide.none,
+                          ),
+                          prefixIcon: const Icon(
+                            Icons.event_note,
+                            color: AppColors.primaryBlue,
+                          ),
                         ),
-                        items: _periods.map((period) => DropdownMenuItem<int>(
-                          value: period.id,
-                          child: Text('${period.periodName} (${DateFormat('dd/MM/yyyy').format(period.startDate)} - ${DateFormat('dd/MM/yyyy').format(period.endDate)})'),
-                        )).toList(),
+                        isExpanded: true,
+                        items: _periods
+                            .map(
+                              (period) => DropdownMenuItem<int>(
+                                value: period.id,
+                                child: Text(
+                                  '${period.periodName}\n${DateFormat('dd/MM/yyyy').format(period.startDate)} - ${DateFormat('dd/MM/yyyy').format(period.endDate)}',
+                                  style: AppTextStyles.bodySmall,
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 2,
+                                ),
+                              ),
+                            )
+                            .toList(),
                         onChanged: (periodId) {
                           if (mounted) {
                             setState(() {
@@ -253,203 +319,368 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
                           }
                         },
                       ),
-                    ),
+                    ],
+                  ),
+                ),
 
-                    // Summary Cards
-                    if (_currentSummary != null)
-                      Expanded(
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            children: [
-                              // Period Info
-                              Card(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
+                // Summary Cards
+                if (_currentSummary != null)
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg,
+                      ),
+                      child: Column(
+                        children: [
+                          // Period Info
+                          Container(
+                            padding: const EdgeInsets.all(AppSpacing.lg),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [
+                                  AppColors.primaryBlue,
+                                  AppColors.primaryDark,
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(
+                                AppBorderRadius.large,
+                              ),
+                              boxShadow: AppShadows.medium,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white24,
+                                        borderRadius: BorderRadius.circular(
+                                          AppBorderRadius.small,
+                                        ),
+                                      ),
+                                      child: const Icon(
+                                        Icons.info_outline,
+                                        color: Colors.white,
+                                        size: 24,
+                                      ),
+                                    ),
+                                    const SizedBox(width: AppSpacing.md),
+                                    Text(
+                                      'Thông Tin Kỳ Lương',
+                                      style: AppTextStyles.h3.copyWith(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: AppSpacing.lg),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Kỳ lương',
+                                          style: AppTextStyles.bodyMedium
+                                              .copyWith(color: Colors.white70),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          _currentSummary!.periodName,
+                                          style: AppTextStyles.h4.copyWith(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: AppSpacing.lg,
+                                        vertical: AppSpacing.md,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white24,
+                                        borderRadius: BorderRadius.circular(
+                                          AppBorderRadius.medium,
+                                        ),
+                                      ),
+                                      child: Column(
                                         children: [
-                                          const Icon(Icons.info, color: Colors.blue),
-                                          const SizedBox(width: 8),
-                                          const Text(
-                                            'Thông Tin Kỳ Lương',
-                                            style: TextStyle(
-                                              fontSize: 18,
+                                          Text(
+                                            'Nhân viên',
+                                            style: AppTextStyles.bodySmall
+                                                .copyWith(
+                                                  color: Colors.white70,
+                                                ),
+                                          ),
+                                          Text(
+                                            '${_currentSummary!.totalEmployees}',
+                                            style: AppTextStyles.h2.copyWith(
+                                              color: Colors.white,
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(height: 12),
-                                      Text(
-                                        'Kỳ: ${_currentSummary!.periodName}',
-                                        style: const TextStyle(fontSize: 16),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: AppSpacing.xl),
+
+                          // Financial Summary
+                          GridView.count(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
+                            childAspectRatio: 1.2,
+                            children: [
+                              _buildSummaryCard(
+                                'Tổng Lương Gross',
+                                _formatCurrency(
+                                  _currentSummary!.totalGrossSalary,
+                                ),
+                                Icons.attach_money,
+                                Colors.blue,
+                              ),
+                              _buildSummaryCard(
+                                'Tổng Lương Net',
+                                _formatCurrency(
+                                  _currentSummary!.totalNetSalary,
+                                ),
+                                Icons.money,
+                                Colors.green,
+                              ),
+                              _buildSummaryCard(
+                                'Tổng Bảo Hiểm',
+                                _formatCurrency(
+                                  _currentSummary!.totalInsuranceDeduction,
+                                ),
+                                Icons.security,
+                                Colors.orange,
+                              ),
+                              _buildSummaryCard(
+                                'Tổng Thuế TNCN',
+                                _formatCurrency(
+                                  _currentSummary!.totalPITDeduction,
+                                ),
+                                Icons.account_balance,
+                                Colors.red,
+                              ),
+                              _buildSummaryCard(
+                                'Tổng Tiền OT',
+                                _formatCurrency(
+                                  _currentSummary!.totalOvertimePay,
+                                ),
+                                Icons.access_time,
+                                Colors.purple,
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 24),
+
+                          // Action Buttons
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [
+                                        Colors.green,
+                                        Colors.greenAccent,
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(
+                                      AppBorderRadius.medium,
+                                    ),
+                                    boxShadow: AppShadows.medium,
+                                  ),
+                                  child: ElevatedButton.icon(
+                                    onPressed: _generatePayroll,
+                                    icon: const Icon(Icons.calculate),
+                                    label: const Text(
+                                      'Tính Lương',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
                                       ),
-                                      Text(
-                                        'Tổng nhân viên: ${_currentSummary!.totalEmployees}',
-                                        style: const TextStyle(fontSize: 16),
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.transparent,
+                                      shadowColor: Colors.transparent,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 16,
                                       ),
-                                    ],
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(
+                                          AppBorderRadius.medium,
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
-
-                              const SizedBox(height: 16),
-
-                              // Financial Summary
-                              GridView.count(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                crossAxisCount: 2,
-                                crossAxisSpacing: 16,
-                                mainAxisSpacing: 16,
-                                childAspectRatio: 1.2,
-                                children: [
-                                  _buildSummaryCard(
-                                    'Tổng Lương Gross',
-                                    _formatCurrency(_currentSummary!.totalGrossSalary),
-                                    Icons.attach_money,
-                                    Colors.blue,
+                              const SizedBox(width: AppSpacing.lg),
+                              Expanded(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [
+                                        AppColors.primaryBlue,
+                                        AppColors.primaryDark,
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(
+                                      AppBorderRadius.medium,
+                                    ),
+                                    boxShadow: AppShadows.medium,
                                   ),
-                                  _buildSummaryCard(
-                                    'Tổng Lương Net',
-                                    _formatCurrency(_currentSummary!.totalNetSalary),
-                                    Icons.money,
-                                    Colors.green,
-                                  ),
-                                  _buildSummaryCard(
-                                    'Tổng Bảo Hiểm',
-                                    _formatCurrency(_currentSummary!.totalInsuranceDeduction),
-                                    Icons.security,
-                                    Colors.orange,
-                                  ),
-                                  _buildSummaryCard(
-                                    'Tổng Thuế TNCN',
-                                    _formatCurrency(_currentSummary!.totalPITDeduction),
-                                    Icons.account_balance,
-                                    Colors.red,
-                                  ),
-                                  _buildSummaryCard(
-                                    'Tổng Tiền OT',
-                                    _formatCurrency(_currentSummary!.totalOvertimePay),
-                                    Icons.access_time,
-                                    Colors.purple,
-                                  ),
-                                ],
-                              ),
-
-                              const SizedBox(height: 24),
-
-                              // Action Buttons
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: ElevatedButton.icon(
-                                      onPressed: _generatePayroll,
-                                      icon: const Icon(Icons.calculate),
-                                      label: const Text('Tính Lương'),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.green,
-                                        foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(vertical: 16),
+                                  child: ElevatedButton.icon(
+                                    onPressed: () {
+                                      // TODO: Navigate to detailed payroll records
+                                    },
+                                    icon: const Icon(Icons.list_alt),
+                                    label: const Text(
+                                      'Chi Tiết',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.transparent,
+                                      shadowColor: Colors.transparent,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 16,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(
+                                          AppBorderRadius.medium,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: ElevatedButton.icon(
-                                      onPressed: () {
-                                        // TODO: Navigate to detailed payroll records
-                                      },
-                                      icon: const Icon(Icons.list),
-                                      label: const Text('Chi Tiết'),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.blue,
-                                        foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(vertical: 16),
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
                             ],
                           ),
-                        ),
-                      )
-                    else if (_selectedPeriodId != null)
-                      const Expanded(
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.hourglass_empty,
-                                size: 64,
-                                color: Colors.grey,
-                              ),
-                              SizedBox(height: 16),
-                              Text(
-                                'Chưa có dữ liệu lương cho kỳ này',
-                                style: TextStyle(fontSize: 16),
-                              ),
-                              SizedBox(height: 8),
-                              Text(
-                                'Hãy nhấn "Tính Lương" để bắt đầu',
-                                style: TextStyle(color: Colors.grey),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                    else
-                      const Expanded(
-                        child: Center(
-                          child: Text(
-                            'Vui lòng chọn kỳ lương',
-                            style: TextStyle(fontSize: 16, color: Colors.grey),
-                          ),
-                        ),
+                          const SizedBox(height: AppSpacing.lg),
+                        ],
                       ),
-                  ],
-                ),
-      floatingActionButton: FloatingActionButton(
+                    ),
+                  )
+                else if (_selectedPeriodId != null)
+                  const Expanded(
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.hourglass_empty,
+                            size: 64,
+                            color: Colors.grey,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'Chưa có dữ liệu lương cho kỳ này',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'Hãy nhấn "Tính Lương" để bắt đầu',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  const Expanded(
+                    child: Center(
+                      child: Text(
+                        'Vui lòng chọn kỳ lương',
+                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           // TODO: Navigate to create new payroll period
         },
         tooltip: 'Tạo kỳ lương mới',
-        child: const Icon(Icons.add),
+        icon: const Icon(Icons.add_circle),
+        label: const Text('Kỳ mới'),
+        backgroundColor: AppColors.primaryBlue,
+        foregroundColor: Colors.white,
+        elevation: 4,
       ),
     );
   }
 
-  Widget _buildSummaryCard(String title, String value, IconData icon, Color color) {
-    return Card(
+  Widget _buildSummaryCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppBorderRadius.large),
+        boxShadow: AppShadows.small,
+        border: Border.all(color: color.withOpacity(0.2), width: 2),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 32, color: color),
-            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 32, color: color),
+            ),
+            const SizedBox(height: AppSpacing.md),
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 12,
+              style: AppTextStyles.bodySmall.copyWith(
                 fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
               ),
               textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 4),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: color,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                value,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
             ),
           ],
         ),

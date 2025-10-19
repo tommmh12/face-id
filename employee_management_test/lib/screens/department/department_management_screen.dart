@@ -7,10 +7,12 @@ class DepartmentManagementScreen extends StatefulWidget {
   const DepartmentManagementScreen({super.key});
 
   @override
-  State<DepartmentManagementScreen> createState() => _DepartmentManagementScreenState();
+  State<DepartmentManagementScreen> createState() =>
+      _DepartmentManagementScreenState();
 }
 
-class _DepartmentManagementScreenState extends State<DepartmentManagementScreen> {
+class _DepartmentManagementScreenState
+    extends State<DepartmentManagementScreen> {
   final EmployeeApiService _service = EmployeeApiService();
   List<Department> _departments = [];
   bool _isLoading = true;
@@ -53,7 +55,9 @@ class _DepartmentManagementScreenState extends State<DepartmentManagementScreen>
   Future<void> _showDepartmentDialog({Department? department}) async {
     final isEdit = department != null;
     final nameController = TextEditingController(text: department?.name ?? '');
-    final descController = TextEditingController(text: department?.description ?? '');
+    final descController = TextEditingController(
+      text: department?.description ?? '',
+    );
 
     final result = await showDialog<bool>(
       context: context,
@@ -109,9 +113,11 @@ class _DepartmentManagementScreenState extends State<DepartmentManagementScreen>
       // TODO: Call API to create/update department
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(isEdit
-              ? 'Chức năng cập nhật sẽ được triển khai sau'
-              : 'Chức năng thêm mới sẽ được triển khai sau'),
+          content: Text(
+            isEdit
+                ? 'Chức năng cập nhật sẽ được triển khai sau'
+                : 'Chức năng thêm mới sẽ được triển khai sau',
+          ),
         ),
       );
     }
@@ -133,7 +139,9 @@ class _DepartmentManagementScreenState extends State<DepartmentManagementScreen>
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.errorColor),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.errorColor,
+            ),
             child: const Text('Xóa'),
           ),
         ],
@@ -153,65 +161,167 @@ class _DepartmentManagementScreenState extends State<DepartmentManagementScreen>
     return Scaffold(
       backgroundColor: AppColors.bgColor,
       appBar: AppBar(
-        title: const Text('Quản Lý Phòng Ban'),
+        title: const Text(
+          'Quản Lý Phòng Ban',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: AppColors.primaryBlue,
+        foregroundColor: Colors.white,
+        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadDepartments,
+            tooltip: 'Tải lại',
           ),
         ],
       ),
       body: _buildBody(),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showDepartmentDialog(),
-        icon: const Icon(Icons.add),
-        label: const Text('Thêm Phòng Ban'),
+        icon: const Icon(Icons.add_circle),
+        label: const Text('Thêm'),
         backgroundColor: AppColors.primaryBlue,
+        foregroundColor: Colors.white,
+        elevation: 4,
       ),
     );
   }
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryBlue),
+        ),
+      );
     }
 
     if (_error != null) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 64, color: AppColors.errorColor),
-            const SizedBox(height: 16),
-            Text(_error!, style: AppTextStyles.bodyMedium),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loadDepartments,
-              child: const Text('Thử lại'),
-            ),
-          ],
+        child: Container(
+          margin: const EdgeInsets.all(AppSpacing.xl),
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppBorderRadius.large),
+            boxShadow: AppShadows.medium,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                decoration: BoxDecoration(
+                  color: AppColors.errorColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: AppColors.errorColor,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Text(
+                'Có lỗi xảy ra',
+                style: AppTextStyles.h4.copyWith(
+                  color: AppColors.errorColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                _error!,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              ElevatedButton.icon(
+                onPressed: _loadDepartments,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Thử lại'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryBlue,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xl,
+                    vertical: AppSpacing.md,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
 
     if (_departments.isEmpty) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.business_outlined, size: 64, color: AppColors.textSecondary),
-            const SizedBox(height: 16),
-            Text(
-              'Chưa có phòng ban nào',
-              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () => _showDepartmentDialog(),
-              icon: const Icon(Icons.add),
-              label: const Text('Thêm Phòng Ban'),
-            ),
-          ],
+        child: Container(
+          margin: const EdgeInsets.all(AppSpacing.xl),
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppBorderRadius.large),
+            boxShadow: AppShadows.medium,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.xl),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [AppColors.primaryBlue, AppColors.primaryDark],
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.business_outlined,
+                  size: 64,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Text(
+                'Chưa có phòng ban nào',
+                style: AppTextStyles.h4.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                'Thêm phòng ban đầu tiên của bạn',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              ElevatedButton.icon(
+                onPressed: () => _showDepartmentDialog(),
+                icon: const Icon(Icons.add_circle),
+                label: const Text('Thêm Phòng Ban'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryBlue,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xl,
+                    vertical: AppSpacing.md,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -249,10 +359,7 @@ class _DepartmentManagementScreenState extends State<DepartmentManagementScreen>
               ),
               child: const Icon(Icons.business, color: Colors.white, size: 28),
             ),
-            title: Text(
-              department.name,
-              style: AppTextStyles.h4,
-            ),
+            title: Text(department.name, style: AppTextStyles.h4),
             subtitle: department.description != null
                 ? Padding(
                     padding: const EdgeInsets.only(top: 8),
@@ -315,7 +422,11 @@ class _DepartmentManagementScreenState extends State<DepartmentManagementScreen>
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.people, size: 16, color: AppColors.textSecondary),
+                    const Icon(
+                      Icons.people,
+                      size: 16,
+                      color: AppColors.textSecondary,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       'ID: ${department.id}',
