@@ -11,6 +11,7 @@ import 'screens/employee/employee_list_screen.dart';
 import 'screens/employee/employee_create_screen.dart';
 import 'screens/employee/employee_detail_screen.dart';
 import 'screens/employee/employee_form_screen.dart';
+import 'screens/employee/employee_management_hub_screen.dart';
 import 'screens/department/department_management_screen.dart';
 import 'screens/face/face_register_screen.dart';
 import 'screens/face/face_checkin_screen.dart';
@@ -249,6 +250,7 @@ class MyApp extends StatelessWidget {
         '/employee-dashboard': (context) => const EmployeeDashboard(),
         '/employees': (context) => const EmployeeListScreen(),
         '/employee/create': (context) => const EmployeeCreateScreen(),
+        '/employee/hub': (context) => const EmployeeManagementHubScreen(),
         '/departments': (context) => const DepartmentManagementScreen(),
         '/face/register': (context) => const FaceRegisterScreen(),
         '/face/checkin': (context) => const FaceCheckinScreen(),

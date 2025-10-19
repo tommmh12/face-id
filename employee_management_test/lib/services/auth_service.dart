@@ -134,18 +134,37 @@ class AuthService {
       final token = await SecureStorageService.readToken();
       
       if (token == null || token.isEmpty) {
+        print('❌ [AUTH] No token found');
         return false;
       }
 
+      // ✅ Enhanced debugging
+      print('🔍 [AUTH] Checking token validity...');
+      
       // Check if token is expired
       if (JwtDecoder.isExpired(token)) {
-        AppLogger.warning('Token expired', tag: 'Auth');
+        final expiryDate = JwtDecoder.getExpirationDate(token);
+        print('⏰ [AUTH] Token expired at: $expiryDate');
+        AppLogger.warning('Token expired at $expiryDate', tag: 'Auth');
         await logout(); // Auto logout
         return false;
       }
 
+      // ✅ Check if token expires soon (within 5 minutes)
+      final expiryDate = JwtDecoder.getExpirationDate(token);
+      final timeUntilExpiry = expiryDate.difference(DateTime.now());
+      
+      if (timeUntilExpiry.inMinutes <= 5) {
+        print('⚠️ [AUTH] Token expires in ${timeUntilExpiry.inMinutes} minutes');
+        AppLogger.warning('Token expires soon: ${timeUntilExpiry.inMinutes} minutes remaining', tag: 'Auth');
+        // TODO: Implement auto-refresh here
+      } else {
+        print('✅ [AUTH] Token valid for ${timeUntilExpiry.inHours}h ${timeUntilExpiry.inMinutes % 60}m');
+      }
+
       return true;
     } catch (e) {
+      print('❌ [AUTH] Token validation error: $e');
       AppLogger.error('Token validation error', error: e, tag: 'Auth');
       return false;
     }

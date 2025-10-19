@@ -14,9 +14,9 @@ class EmployeeApiService extends BaseApiService {
   /// Lấy danh sách tất cả phòng ban
   Future<ApiResponse<List<Department>>> getDepartments() async {
     return handleListRequest(
-      () => CustomHttpClient.get(
+      () async => CustomHttpClient.get(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/departments'),
-        headers: ApiConfig.headers,
+        headers: await ApiConfig.getAuthenticatedHeaders(), // ✅ FIXED: Use auth headers
       ),
       (json) => Department.fromJson(json),
     );
@@ -28,9 +28,9 @@ class EmployeeApiService extends BaseApiService {
   /// Tạo nhân viên mới (chưa có face)
   Future<ApiResponse<CreateEmployeeResponse>> createEmployee(CreateEmployeeRequest request) async {
     return handleRequest(
-      () => CustomHttpClient.post(
+      () async => CustomHttpClient.post(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint'),
-        headers: ApiConfig.headers,
+        headers: await ApiConfig.getAuthenticatedHeaders(), // ✅ FIXED: Use auth headers
         body: json.encode(request.toJson()),
       ),
       (json) => CreateEmployeeResponse.fromJson(json),
@@ -41,9 +41,9 @@ class EmployeeApiService extends BaseApiService {
   /// Lấy danh sách tất cả nhân viên
   Future<ApiResponse<List<Employee>>> getAllEmployees() async {
     return handleListRequest(
-      () => CustomHttpClient.get(
+      () async => CustomHttpClient.get(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint'),
-        headers: ApiConfig.headers,
+        headers: await ApiConfig.getAuthenticatedHeaders(), // ✅ FIXED: Use auth headers
       ),
       (json) => Employee.fromJson(json),
     );
@@ -53,9 +53,9 @@ class EmployeeApiService extends BaseApiService {
   /// Lấy thông tin nhân viên theo ID
   Future<ApiResponse<Employee>> getEmployeeById(int id) async {
     return handleRequest(
-      () => CustomHttpClient.get(
+      () async => CustomHttpClient.get(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/$id'),
-        headers: ApiConfig.headers,
+        headers: await ApiConfig.getAuthenticatedHeaders(), // ✅ FIXED: Use auth headers
       ),
       (json) => Employee.fromJson(json),
     );
@@ -65,9 +65,9 @@ class EmployeeApiService extends BaseApiService {
   /// Lấy danh sách nhân viên theo phòng ban
   Future<ApiResponse<List<Employee>>> getEmployeesByDepartment(int departmentId) async {
     return handleListRequest(
-      () => CustomHttpClient.get(
+      () async => CustomHttpClient.get(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/department/$departmentId'),
-        headers: ApiConfig.headers,
+        headers: await ApiConfig.getAuthenticatedHeaders(), // ✅ FIXED: Use auth headers
       ),
       (json) => Employee.fromJson(json),
     );
@@ -79,9 +79,9 @@ class EmployeeApiService extends BaseApiService {
   /// Đăng ký khuôn mặt cho nhân viên
   Future<ApiResponse<RegisterEmployeeFaceResponse>> registerFace(RegisterEmployeeFaceRequest request) async {
     return handleRequest(
-      () => CustomHttpClient.post(
+      () async => CustomHttpClient.post(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/register-face'),
-        headers: ApiConfig.headers,
+        headers: await ApiConfig.getAuthenticatedHeaders(), // ✅ FIXED: Use auth headers
         body: json.encode(request.toJson()),
       ),
       (json) => RegisterEmployeeFaceResponse.fromJson(json),
@@ -92,9 +92,9 @@ class EmployeeApiService extends BaseApiService {
   /// Verify khuôn mặt và chấm công (realtime)
   Future<ApiResponse<VerifyEmployeeFaceResponse>> verifyFace(VerifyFaceRequest request) async {
     return handleRequest(
-      () => CustomHttpClient.post(
+      () async => CustomHttpClient.post(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/verify-face'),
-        headers: ApiConfig.headers,
+        headers: await ApiConfig.getAuthenticatedHeaders(), // ✅ FIXED: Use auth headers
         body: json.encode(request.toJson()),
       ),
       (json) => VerifyEmployeeFaceResponse.fromJson(json),

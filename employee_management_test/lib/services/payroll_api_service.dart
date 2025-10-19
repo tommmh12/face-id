@@ -15,9 +15,9 @@ class PayrollApiService extends BaseApiService {
     AppLogger.apiRequest('$_endpoint/periods', method: 'POST', data: request.toJson());
     
     final response = await handleRequest(
-      () => CustomHttpClient.post(
+      () async => CustomHttpClient.post(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/periods'),
-        headers: ApiConfig.headers,
+        headers: await ApiConfig.getAuthenticatedHeaders(), //  FIXED: Use auth headers
         body: json.encode(request.toJson()),
       ),
       (json) => PayrollPeriodResponse.fromJson(json),
@@ -39,9 +39,9 @@ class PayrollApiService extends BaseApiService {
     AppLogger.apiRequest('$_endpoint/periods', method: 'GET');
     
     final response = await handleListRequest(
-      () => CustomHttpClient.get(
+      () async => CustomHttpClient.get(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/periods'),
-        headers: ApiConfig.headers,
+        headers: await ApiConfig.getAuthenticatedHeaders(), //  FIXED: Use auth headers
       ),
       (json) => PayrollPeriodResponse.fromJson(json),
     );
@@ -62,9 +62,9 @@ class PayrollApiService extends BaseApiService {
     AppLogger.apiRequest('$_endpoint/periods/$id', method: 'GET');
     
     final response = await handleRequest(
-      () => CustomHttpClient.get(
+      () async => CustomHttpClient.get(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/periods/$id'),
-        headers: ApiConfig.headers,
+        headers: await ApiConfig.getAuthenticatedHeaders(), //  FIXED: Use auth headers
       ),
       (json) => PayrollPeriodResponse.fromJson(json),
     );
@@ -91,9 +91,9 @@ class PayrollApiService extends BaseApiService {
     });
     
     final response = await handleRequest(
-      () => CustomHttpClient.post(
+      () async => CustomHttpClient.post(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/rules'),
-        headers: ApiConfig.headers,
+        headers: await ApiConfig.getAuthenticatedHeaders(), //  FIXED: Use auth headers
         body: json.encode(request.toJson()),
       ),
       (json) => PayrollRuleResponse.fromJson(json),
@@ -115,9 +115,9 @@ class PayrollApiService extends BaseApiService {
     AppLogger.apiRequest('$_endpoint/rules/employee/$employeeId', method: 'GET');
     
     final response = await handleRequest(
-      () => CustomHttpClient.get(
+      () async => CustomHttpClient.get(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/rules/employee/$employeeId'),
-        headers: ApiConfig.headers,
+        headers: await ApiConfig.getAuthenticatedHeaders(), //  FIXED: Use auth headers
       ),
       (json) => PayrollRuleResponse.fromJson(json),
     );
@@ -138,9 +138,9 @@ class PayrollApiService extends BaseApiService {
     AppLogger.apiRequest('$_endpoint/rules', method: 'GET');
     
     final response = await handleListRequest(
-      () => CustomHttpClient.get(
+      () async => CustomHttpClient.get(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/rules'),
-        headers: ApiConfig.headers,
+        headers: await ApiConfig.getAuthenticatedHeaders(), //  FIXED: Use auth headers
       ),
       (json) => PayrollRuleResponse.fromJson(json),
     );
@@ -167,9 +167,9 @@ class PayrollApiService extends BaseApiService {
     });
     
     final response = await handleRequest(
-      () => CustomHttpClient.post(
+      () async => CustomHttpClient.post(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/allowances'),
-        headers: ApiConfig.headers,
+        headers: await ApiConfig.getAuthenticatedHeaders(), //  FIXED: Use auth headers
         body: json.encode(request.toJson()),
       ),
       (json) => AllowanceResponse.fromJson(json),
@@ -191,9 +191,9 @@ class PayrollApiService extends BaseApiService {
     AppLogger.apiRequest('$_endpoint/allowances/employee/$employeeId', method: 'GET');
     
     final response = await handleListRequest(
-      () => CustomHttpClient.get(
+      () async => CustomHttpClient.get(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/allowances/employee/$employeeId'),
-        headers: ApiConfig.headers,
+        headers: await ApiConfig.getAuthenticatedHeaders(), //  FIXED: Use auth headers
       ),
       (json) => AllowanceResponse.fromJson(json),
     );
@@ -217,9 +217,9 @@ class PayrollApiService extends BaseApiService {
     AppLogger.apiRequest('$_endpoint/generate/$periodId', method: 'POST');
     
     final response = await handleRequest(
-      () => CustomHttpClient.post(
+      () async => CustomHttpClient.post(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/generate/$periodId'),
-        headers: ApiConfig.headers,
+        headers: await ApiConfig.getAuthenticatedHeaders(), //  FIXED: Use auth headers
       ),
       (json) => GeneratePayrollResponse.fromJson(json),
     );
@@ -244,9 +244,9 @@ class PayrollApiService extends BaseApiService {
     AppLogger.apiRequest('$_endpoint/summary/$periodId', method: 'GET');
     
     final response = await handleRequest(
-      () => CustomHttpClient.get(
+      () async => CustomHttpClient.get(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/summary/$periodId'),
-        headers: ApiConfig.headers,
+        headers: await ApiConfig.getAuthenticatedHeaders(), //  FIXED: Use auth headers
       ),
       (json) => PayrollSummaryResponse.fromJson(json),
     );
@@ -269,9 +269,9 @@ class PayrollApiService extends BaseApiService {
     AppLogger.apiRequest('$_endpoint/records/period/$periodId/employee/$employeeId', method: 'GET');
     
     final response = await handleRequest(
-      () => CustomHttpClient.get(
+      () async => CustomHttpClient.get(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/records/period/$periodId/employee/$employeeId'),
-        headers: ApiConfig.headers,
+        headers: await ApiConfig.getAuthenticatedHeaders(), //  FIXED: Use auth headers
       ),
       (json) => PayrollRecordResponse.fromJson(json),
     );
@@ -300,7 +300,7 @@ class PayrollApiService extends BaseApiService {
       // Get raw HTTP response first for debugging
       final httpResponse = await CustomHttpClient.get(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/records/period/$periodId'),
-        headers: ApiConfig.headers,
+        headers: await ApiConfig.getAuthenticatedHeaders(), //  FIXED: Use auth headers
       );
       
       // 🔍 DEBUG: Log raw response body to see what backend actually returns
@@ -350,9 +350,9 @@ class PayrollApiService extends BaseApiService {
     });
     
     final response = await handleRequest(
-      () => CustomHttpClient.post(
+      () async => CustomHttpClient.post(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/adjustments'),
-        headers: ApiConfig.headers,
+        headers: await ApiConfig.getAuthenticatedHeaders(), //  FIXED: Use auth headers
         body: json.encode(request.toJson()),
       ),
       (json) => SalaryAdjustmentResponse.fromJson(json),
@@ -374,9 +374,9 @@ class PayrollApiService extends BaseApiService {
     AppLogger.apiRequest('$_endpoint/adjustments/employee/$employeeId', method: 'GET');
     
     final response = await handleListRequest(
-      () => CustomHttpClient.get(
+      () async => CustomHttpClient.get(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/adjustments/employee/$employeeId'),
-        headers: ApiConfig.headers,
+        headers: await ApiConfig.getAuthenticatedHeaders(), //  FIXED: Use auth headers
       ),
       (json) => SalaryAdjustmentResponse.fromJson(json),
     );
@@ -403,9 +403,9 @@ class PayrollApiService extends BaseApiService {
     });
     
     final response = await handleRequest(
-      () => CustomHttpClient.post(
+      () async => CustomHttpClient.post(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/attendance/correct'),
-        headers: ApiConfig.headers,
+        headers: await ApiConfig.getAuthenticatedHeaders(), //  FIXED: Use auth headers
         body: json.encode(request.toJson()),
       ),
       (json) => AttendanceCorrectionResponse.fromJson(json),
@@ -427,9 +427,9 @@ class PayrollApiService extends BaseApiService {
     AppLogger.apiRequest('$_endpoint/recalculate/$periodId', method: 'POST');
     
     final response = await handleRequest(
-      () => CustomHttpClient.post(
+      () async => CustomHttpClient.post(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/recalculate/$periodId'),
-        headers: ApiConfig.headers,
+        headers: await ApiConfig.getAuthenticatedHeaders(), //  FIXED: Use auth headers
       ),
       (json) => GeneratePayrollResponse.fromJson(json),
     );
@@ -455,9 +455,9 @@ class PayrollApiService extends BaseApiService {
     });
     
     final response = await handleRequest(
-      () => CustomHttpClient.put(
+      () async => CustomHttpClient.put(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/periods/$periodId/status'),
-        headers: ApiConfig.headers,
+        headers: await ApiConfig.getAuthenticatedHeaders(), //  FIXED: Use auth headers
         body: json.encode(request.toJson()),
       ),
       (json) => PayrollPeriodResponse.fromJson(json),
@@ -481,9 +481,9 @@ class PayrollApiService extends BaseApiService {
     AppLogger.apiRequest('$_endpoint/health', method: 'GET');
     
     final response = await handleRequest(
-      () => CustomHttpClient.get(
+      () async => CustomHttpClient.get(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/health'),
-        headers: ApiConfig.headers,
+        headers: await ApiConfig.getAuthenticatedHeaders(), //  FIXED: Use auth headers
       ),
       (json) => json,
     );
@@ -527,7 +527,7 @@ class PayrollApiService extends BaseApiService {
     AppLogger.apiRequest('$_endpoint/audit', method: 'GET', data: queryParams);
     
     final response = await handleListRequest(
-      () => CustomHttpClient.get(uri, headers: ApiConfig.headers),
+      () async => CustomHttpClient.get(uri, headers: await ApiConfig.getAuthenticatedHeaders()), // ✅ FIXED: Use auth headers
       (json) => AuditLogResponse.fromJson(json),
     );
     

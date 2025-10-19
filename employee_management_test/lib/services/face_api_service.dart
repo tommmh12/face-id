@@ -21,9 +21,9 @@ class FaceApiService extends BaseApiService {
     AppLogger.apiRequest('$_endpoint/register', method: 'POST', data: request.toJson());
     
     final response = await handleRequest(
-      () => CustomHttpClient.post(
+      () async => CustomHttpClient.post(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/register'),
-        headers: ApiConfig.headers,
+        headers: await ApiConfig.getAuthenticatedHeaders(), //  FIXED: Use auth headers
         body: json.encode(request.toJson()),
       ),
       (json) => RegisterEmployeeFaceResponse.fromJson(json),
@@ -57,9 +57,9 @@ class FaceApiService extends BaseApiService {
     AppLogger.apiRequest('$_endpoint/re-register', method: 'POST', data: request.toJson());
     
     final response = await handleRequest(
-      () => CustomHttpClient.post(
+      () async => CustomHttpClient.post(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/re-register'),
-        headers: ApiConfig.headers,
+        headers: await ApiConfig.getAuthenticatedHeaders(), //  FIXED: Use auth headers
         body: json.encode(request.toJson()),
       ),
       (json) => RegisterEmployeeFaceResponse.fromJson(json),
@@ -89,9 +89,9 @@ class FaceApiService extends BaseApiService {
     AppLogger.apiRequest('$_endpoint/checkin', method: 'POST', data: request.toJson());
     
     final response = await handleRequest(
-      () => CustomHttpClient.post(
+      () async => CustomHttpClient.post(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/checkin'),
-        headers: ApiConfig.headers,
+        headers: await ApiConfig.getAuthenticatedHeaders(), //  FIXED: Use auth headers
         body: json.encode(request.toJson()),
       ),
       (json) => VerifyEmployeeFaceResponse.fromJson(json),
@@ -124,9 +124,9 @@ class FaceApiService extends BaseApiService {
     AppLogger.apiRequest('$_endpoint/checkout', method: 'POST', data: request.toJson());
     
     final response = await handleRequest(
-      () => CustomHttpClient.post(
+      () async => CustomHttpClient.post(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/checkout'),
-        headers: ApiConfig.headers,
+        headers: await ApiConfig.getAuthenticatedHeaders(), //  FIXED: Use auth headers
         body: json.encode(request.toJson()),
       ),
       (json) => VerifyEmployeeFaceResponse.fromJson(json),
@@ -150,9 +150,9 @@ class FaceApiService extends BaseApiService {
   /// Health check endpoint - Kiểm tra trạng thái API và AWS Rekognition Collection
   Future<ApiResponse<Map<String, dynamic>>> healthCheck() async {
     return handleRequest(
-      () => CustomHttpClient.get(
+      () async => CustomHttpClient.get(
         Uri.parse('${ApiConfig.baseUrl}$_endpoint/health'),
-        headers: ApiConfig.headers,
+        headers: await ApiConfig.getAuthenticatedHeaders(), //  FIXED: Use auth headers
       ),
       (json) => json,
     );

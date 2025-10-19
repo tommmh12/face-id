@@ -71,6 +71,85 @@ class _AdminDashboardState extends State<AdminDashboard> {
     }
   }
 
+  void _showChangePasswordDialog() {
+    final oldPasswordController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Đổi mật khẩu'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: oldPasswordController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Mật khẩu cũ',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.lock_outline),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: newPasswordController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Mật khẩu mới',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.lock),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: confirmPasswordController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Xác nhận mật khẩu mới',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.lock_reset),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (newPasswordController.text != confirmPasswordController.text) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Mật khẩu xác nhận không khớp'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Tính năng đổi mật khẩu đang được phát triển'),
+                  backgroundColor: Colors.blue,
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+            ),
+            child: const Text('Đổi mật khẩu'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -100,8 +179,21 @@ class _AdminDashboardState extends State<AdminDashboard> {
               ),
             ),
             onSelected: (value) {
-              if (value == 'logout') {
-                _logout();
+              switch (value) {
+                case 'logout':
+                  _logout();
+                  break;
+                case 'change_password':
+                  _showChangePasswordDialog();
+                  break;
+                case 'manage_roles':
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Tính năng quản lý vai trò đang được phát triển'),
+                      backgroundColor: Colors.blue,
+                    ),
+                  );
+                  break;
               }
             },
             itemBuilder: (context) => [
@@ -148,12 +240,39 @@ class _AdminDashboardState extends State<AdminDashboard> {
               ),
               const PopupMenuDivider(),
               const PopupMenuItem(
+                value: 'change_password',
+                child: Row(
+                  children: [
+                    Icon(Icons.lock_reset, size: 20, color: Colors.blue),
+                    SizedBox(width: 8),
+                    Text('Đổi mật khẩu'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'manage_roles',
+                child: Row(
+                  children: [
+                    Icon(Icons.admin_panel_settings, size: 20, color: Colors.purple),
+                    SizedBox(width: 8),
+                    Text('Quản lý vai trò'),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              PopupMenuItem(
                 value: 'logout',
                 child: Row(
                   children: [
-                    Icon(Icons.logout, size: 20),
-                    SizedBox(width: 8),
-                    Text('Đăng xuất'),
+                    Icon(Icons.logout, size: 20, color: Colors.red[700]),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Đăng xuất',
+                      style: TextStyle(
+                        color: Colors.red[700],
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -164,9 +283,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ),
       body: RefreshIndicator(
         onRefresh: _loadUserData,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
             // Welcome Card
             Card(
               child: Padding(
@@ -322,6 +445,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
               ),
             ),
           ],
+        ),
+          ),
         ),
       ),
     );

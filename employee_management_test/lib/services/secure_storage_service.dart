@@ -33,7 +33,9 @@ class SecureStorageService {
   static Future<void> saveToken(String token) async {
     try {
       await _storage.write(key: _keyToken, value: token);
-      AppLogger.success('JWT Token saved securely', tag: 'SecureStorage');
+      // ✅ Enhanced debugging
+      print('💾 [STORAGE] Token saved: ${token.length} chars, starts with: ${token.substring(0, 20)}...');
+      AppLogger.success('JWT Token saved securely to storage', tag: 'SecureStorage');
     } catch (e) {
       AppLogger.error('Failed to save token', error: e, tag: 'SecureStorage');
       rethrow;
@@ -45,7 +47,12 @@ class SecureStorageService {
     try {
       final token = await _storage.read(key: _keyToken);
       if (token != null) {
-        AppLogger.debug('JWT Token retrieved', tag: 'SecureStorage');
+        // ✅ Enhanced debugging
+        print('🔐 [STORAGE] Token retrieved: ${token.length} chars, starts with: ${token.substring(0, 20)}...');
+        AppLogger.debug('JWT Token retrieved from secure storage', tag: 'SecureStorage');
+      } else {
+        print('⚠️ [STORAGE] No token found in secure storage');
+        AppLogger.warning('No JWT token found in secure storage', tag: 'SecureStorage');
       }
       return token;
     } catch (e) {

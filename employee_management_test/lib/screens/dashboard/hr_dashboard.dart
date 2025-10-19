@@ -167,9 +167,13 @@ class _HRDashboardState extends State<HRDashboard> {
       ),
       body: RefreshIndicator(
         onRefresh: _loadUserData,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
             // Welcome Card
             Card(
               child: Padding(
@@ -330,6 +334,8 @@ class _HRDashboardState extends State<HRDashboard> {
               ),
             ),
           ],
+        ),
+          ),
         ),
       ),
     );

@@ -114,10 +114,43 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
       ),
       body: Column(
         children: [
+          // Search Bar
+          Container(
+            margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Tìm kiếm theo tên hoặc mã nhân viên...',
+                prefixIcon: const Icon(Icons.search_rounded, size: 22),
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey[200]!),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFF1E88E5), width: 2),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+              ),
+              onChanged: (value) {
+                // TODO: Implement search filter
+                setState(() {});
+              },
+            ),
+          ),
+
           // Department Filter
           if (_departments.isNotEmpty)
             Container(
-              margin: const EdgeInsets.all(16),
+              margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -168,44 +201,113 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : _error != null
                 ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: 64,
-                          color: Colors.red[300],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          _error!,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 16),
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: _loadData,
-                          child: const Text('Thử lại'),
-                        ),
-                      ],
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: Colors.red[50],
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.wifi_off_rounded,
+                              size: 64,
+                              color: Colors.red[300],
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          const Text(
+                            'Không thể tải dữ liệu',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _error!,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            onPressed: _loadData,
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Thử lại'),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   )
                 : _employees.isEmpty
-                ? const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.people_outline,
-                          size: 64,
-                          color: Colors.grey,
-                        ),
-                        SizedBox(height: 16),
-                        Text(
-                          'Không có nhân viên nào',
-                          style: TextStyle(fontSize: 16),
-                        ),
-                      ],
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: Colors.blue[50],
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.people_outline_rounded,
+                              size: 64,
+                              color: Colors.blue[300],
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          const Text(
+                            'Không có dữ liệu nhân viên',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _selectedDepartmentId != null
+                                ? 'Không tìm thấy nhân viên nào trong phòng ban này'
+                                : 'Chưa có nhân viên nào được thêm vào hệ thống',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.pushNamed(context, '/employee/create')
+                                  .then((_) => _loadData());
+                            },
+                            icon: const Icon(Icons.add),
+                            label: const Text('Thêm nhân viên mới'),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   )
                 : ListView.builder(
