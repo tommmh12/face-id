@@ -341,6 +341,8 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
     return '${formatter.format(period.startDate)} - ${formatter.format(period.endDate)}';
   }
 
+  /// ✅ RESOLVED: _buildStatCard Method (Login Branch Implementation)
+  /// Keeps statistics display logic with theme-based styling
   Widget _buildStatCard({
     required IconData icon,
     required String title,
