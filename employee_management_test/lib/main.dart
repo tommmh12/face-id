@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:provider/provider.dart';
+import 'screens/auth/splash_screen.dart';
+import 'screens/auth/login_screen.dart';
+import 'screens/dashboard/admin_dashboard.dart';
+import 'screens/dashboard/hr_dashboard.dart';
+import 'screens/dashboard/employee_dashboard.dart';
 import 'screens/home_screen.dart';
 import 'screens/employee/employee_list_screen.dart';
 import 'screens/employee/employee_create_screen.dart';
@@ -16,6 +22,7 @@ import 'screens/payroll/employee_payroll_detail_screen.dart';
 import 'screens/payroll/employee_salary_detail_screen_v2.dart';
 import 'screens/payroll/payroll_chart_screen.dart';
 import 'screens/api_test_screen.dart';
+import 'services/loading_service.dart';
 import 'utils/camera_helper.dart';
 
 void main() async {
@@ -31,7 +38,13 @@ void main() async {
     debugPrint('Camera initialization failed: $e');
   }
 
-  runApp(const MyApp());
+  // ✅ Setup Provider with LoadingService
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => LoadingService(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -208,9 +221,32 @@ class MyApp extends StatelessWidget {
         // Scaffold Background
         scaffoldBackgroundColor: const Color(0xFFF5F7FA),
       ),
-      initialRoute: '/',
+      
+      // ✅ Global Loading Overlay
+      builder: (context, child) {
+        return Stack(
+          children: [
+            child!,
+            // Listen to LoadingService and show overlay when loading
+            Consumer<LoadingService>(
+              builder: (context, loading, _) {
+                return loading.isLoading
+                    ? const GlobalLoadingOverlay()
+                    : const SizedBox.shrink();
+              },
+            ),
+          ],
+        );
+      },
+      
+      initialRoute: '/splash',
       routes: {
+        '/splash': (context) => const SplashScreen(),
+        '/login': (context) => const LoginScreen(),
         '/': (context) => const HomeScreen(),
+        '/admin-dashboard': (context) => const AdminDashboard(),
+        '/hr-dashboard': (context) => const HRDashboard(),
+        '/employee-dashboard': (context) => const EmployeeDashboard(),
         '/employees': (context) => const EmployeeListScreen(),
         '/employee/create': (context) => const EmployeeCreateScreen(),
         '/departments': (context) => const DepartmentManagementScreen(),

@@ -47,6 +47,9 @@ dependencies:
   
   # Storage & State Management
   shared_preferences: ^2.2.2
+  flutter_secure_storage: ^9.0.0  # ✅ Secure JWT Token Storage
+  provider: ^6.1.1  # ✅ State Management for LoadingService
+  jwt_decoder: ^2.0.1  # ✅ JWT Token Decoding
   
   # Charts & Visualization
   fl_chart: ^0.69.0

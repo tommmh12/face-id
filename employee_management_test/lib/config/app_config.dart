@@ -1,5 +1,6 @@
 class AppConfig {
   // API Configuration
+  // Production API - Face ID Employee Management System
   static const String baseUrl = 'https://api.studyplannerapp.io.vn/api';
   
   // Update this URL to point to your actual C# API server
@@ -42,10 +43,14 @@ class AppConfig {
 
 // Environment specific configurations
 class DevConfig extends AppConfig {
-  static const String baseUrl = 'http://localhost:5000/api';
-  // or 'https://localhost:7000/api' if using HTTPS
+  // Development configuration (if needed for local testing)
+  // For Android Emulator: 10.0.2.2 maps to host machine's localhost
+  // For iOS Simulator: Use localhost
+  // For Physical Device: Use your computer's IP (e.g., 192.168.1.100)
+  static const String baseUrl = 'https://api.studyplannerapp.io.vn/api';
+  // or 'http://10.0.2.2:5000/api' if using local backend
 }
 
 class ProdConfig extends AppConfig {
-  static const String baseUrl = 'https://your-production-domain.com/api';
+  static const String baseUrl = 'https://api.studyplannerapp.io.vn/api';
 }
