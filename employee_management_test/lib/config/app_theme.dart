@@ -1,35 +1,62 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Primary
-  static const primaryBlue = Color(0xFF2196F3);
-  static const primaryDark = Color(0xFF1976D2);
-  static const primaryLight = Color(0xFF64B5F6);
-  
-  // Secondary
-  static const secondaryGreen = Color(0xFF4CAF50);
-  static const secondaryGreenDark = Color(0xFF388E3C);
-  static const secondaryOrange = Color(0xFFFF9800);
-  static const secondaryOrangeDark = Color(0xFFF57C00);
-  static const secondaryPurple = Color(0xFF9C27B0);
-  static const secondaryPurpleDark = Color(0xFF7B1FA2);
-  
-  // Status
-  static const successColor = Color(0xFF4CAF50);
-  static const errorColor = Color(0xFFF44336);
-  static const warningColor = Color(0xFFFF9800);
-  static const infoColor = Color(0xFF2196F3);
-  
-  // Neutrals
-  static const bgColor = Color(0xFFF8F9FA);
-  static const cardColor = Colors.white;
-  static const textPrimary = Color(0xFF212121);
-  static const textSecondary = Color(0xFF757575);
-  static const dividerColor = Color(0xFFE0E0E0);
-  static const borderColor = Color(0xFFEEEEEE);
+  // Modern Primary Colors - Professional Blue
+  static const primaryBlue = Color(0xFF1E88E5);
+  static const primaryDark = Color(0xFF1565C0);
+  static const primaryLight = Color(0xFF42A5F5);
+  static const primaryLighter = Color(0xFFE3F2FD);
+
+  // Secondary Colors - Fresh & Modern
+  static const secondaryGreen = Color(0xFF43A047);
+  static const secondaryGreenDark = Color(0xFF2E7D32);
+  static const secondaryGreenLight = Color(0xFFE8F5E9);
+
+  static const secondaryOrange = Color(0xFFFF6F00);
+  static const secondaryOrangeDark = Color(0xFFE65100);
+  static const secondaryOrangeLight = Color(0xFFFFF3E0);
+
+  static const secondaryPurple = Color(0xFF8E24AA);
+  static const secondaryPurpleDark = Color(0xFF6A1B9A);
+  static const secondaryPurpleLight = Color(0xFFF3E5F5);
+
+  static const secondaryTeal = Color(0xFF00897B);
+  static const secondaryTealLight = Color(0xFFE0F2F1);
+
+  // Status Colors
+  static const successColor = Color(0xFF43A047);
+  static const successLight = Color(0xFFE8F5E9);
+  static const errorColor = Color(0xFFE53935);
+  static const errorLight = Color(0xFFFFEBEE);
+  static const warningColor = Color(0xFFFB8C00);
+  static const warningLight = Color(0xFFFFF3E0);
+  static const infoColor = Color(0xFF1E88E5);
+  static const infoLight = Color(0xFFE3F2FD);
+
+  // Neutrals - Modern & Clean
+  static const bgColor = Color(0xFFF5F7FA);
+  static const bgSecondary = Color(0xFFFFFFFF);
+  static const cardColor = Color(0xFFFFFFFF);
+  static const surfaceColor = Color(0xFFFAFBFC);
+
+  // Text Colors
+  static const textPrimary = Color(0xFF1A1A1A);
+  static const textSecondary = Color(0xFF666666);
+  static const textTertiary = Color(0xFF999999);
+  static const textDisabled = Color(0xFFBDBDBD);
+
+  // Border & Divider
+  static const dividerColor = Color(0xFFE5E7EB);
+  static const borderColor = Color(0xFFE0E0E0);
+  static const borderLight = Color(0xFFF0F0F0);
+
+  // Overlay & Shadow
+  static const overlayDark = Color(0x80000000);
+  static const overlayLight = Color(0x33000000);
 }
 
 class AppSpacing {
+  static const double xxs = 2.0;
   static const double xs = 4.0;
   static const double sm = 8.0;
   static const double md = 12.0;
@@ -37,96 +64,240 @@ class AppSpacing {
   static const double xl = 20.0;
   static const double xxl = 24.0;
   static const double xxxl = 32.0;
+  static const double huge = 40.0;
+  static const double massive = 48.0;
 }
 
 class AppTextStyles {
-  // Headings
+  // Headings - Modern Typography
   static const h1 = TextStyle(
     fontSize: 32,
-    fontWeight: FontWeight.bold,
+    fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
+    letterSpacing: -0.5,
+    height: 1.2,
   );
-  
+
   static const h2 = TextStyle(
-    fontSize: 24,
-    fontWeight: FontWeight.bold,
+    fontSize: 28,
+    fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
+    letterSpacing: -0.3,
+    height: 1.3,
   );
-  
+
   static const h3 = TextStyle(
+    fontSize: 24,
+    fontWeight: FontWeight.w600,
+    color: AppColors.textPrimary,
+    letterSpacing: -0.2,
+    height: 1.3,
+  );
+
+  static const h4 = TextStyle(
     fontSize: 20,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
+    height: 1.4,
   );
-  
-  static const h4 = TextStyle(
+
+  static const h5 = TextStyle(
     fontSize: 18,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
+    height: 1.4,
   );
-  
-  // Body
-  static const bodyLarge = TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.normal,
-    color: AppColors.textPrimary,
-  );
-  
-  static const bodyMedium = TextStyle(
-    fontSize: 14,
-    fontWeight: FontWeight.normal,
-    color: AppColors.textPrimary,
-  );
-  
-  static const bodySmall = TextStyle(
-    fontSize: 12,
-    fontWeight: FontWeight.normal,
-    color: AppColors.textSecondary,
-  );
-  
-  // Button
-  static const buttonText = TextStyle(
+
+  static const h6 = TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.w600,
+    color: AppColors.textPrimary,
+    height: 1.5,
   );
-  
-  // Caption
+
+  // Body Text
+  static const bodyLarge = TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.w400,
+    color: AppColors.textPrimary,
+    height: 1.5,
+  );
+
+  static const bodyMedium = TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w400,
+    color: AppColors.textPrimary,
+    height: 1.5,
+  );
+
+  static const bodySmall = TextStyle(
+    fontSize: 13,
+    fontWeight: FontWeight.w400,
+    color: AppColors.textSecondary,
+    height: 1.4,
+  );
+
+  // Button Text
+  static const buttonLarge = TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0.3,
+  );
+
+  static const buttonMedium = TextStyle(
+    fontSize: 15,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0.2,
+  );
+
+  static const buttonSmall = TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0.2,
+  );
+
+  // Label & Caption
+  static const label = TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w500,
+    color: AppColors.textSecondary,
+    height: 1.4,
+  );
+
   static const caption = TextStyle(
     fontSize: 12,
-    fontWeight: FontWeight.normal,
+    fontWeight: FontWeight.w400,
     color: AppColors.textSecondary,
+    height: 1.3,
+  );
+
+  static const captionBold = TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.w600,
+    color: AppColors.textSecondary,
+    height: 1.3,
+  );
+
+  // Overline
+  static const overline = TextStyle(
+    fontSize: 11,
+    fontWeight: FontWeight.w600,
+    color: AppColors.textTertiary,
+    letterSpacing: 1.0,
+    height: 1.3,
   );
 }
 
 class AppBorderRadius {
+  static const double xs = 4.0;
   static const double small = 8.0;
   static const double medium = 12.0;
   static const double large = 16.0;
-  static const double extraLarge = 20.0;
+  static const double xl = 20.0;
+  static const double xxl = 24.0;
+  static const double rounded = 100.0; // For circular buttons
 }
 
 class AppShadows {
+  static List<BoxShadow> get subtle => [
+    BoxShadow(
+      color: Colors.black.withOpacity(0.03),
+      blurRadius: 2,
+      offset: const Offset(0, 1),
+    ),
+  ];
+
   static List<BoxShadow> get small => [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.05),
-          blurRadius: 4,
-          offset: const Offset(0, 2),
-        ),
-      ];
+    BoxShadow(
+      color: Colors.black.withOpacity(0.04),
+      blurRadius: 4,
+      offset: const Offset(0, 2),
+    ),
+    BoxShadow(
+      color: Colors.black.withOpacity(0.02),
+      blurRadius: 2,
+      offset: const Offset(0, 1),
+    ),
+  ];
 
   static List<BoxShadow> get medium => [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.08),
-          blurRadius: 8,
-          offset: const Offset(0, 4),
-        ),
-      ];
+    BoxShadow(
+      color: Colors.black.withOpacity(0.06),
+      blurRadius: 8,
+      offset: const Offset(0, 4),
+    ),
+    BoxShadow(
+      color: Colors.black.withOpacity(0.03),
+      blurRadius: 4,
+      offset: const Offset(0, 2),
+    ),
+  ];
 
   static List<BoxShadow> get large => [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.1),
-          blurRadius: 16,
-          offset: const Offset(0, 8),
-        ),
-      ];
+    BoxShadow(
+      color: Colors.black.withOpacity(0.08),
+      blurRadius: 16,
+      offset: const Offset(0, 6),
+    ),
+    BoxShadow(
+      color: Colors.black.withOpacity(0.04),
+      blurRadius: 8,
+      offset: const Offset(0, 3),
+    ),
+  ];
+
+  static List<BoxShadow> get xl => [
+    BoxShadow(
+      color: Colors.black.withOpacity(0.1),
+      blurRadius: 24,
+      offset: const Offset(0, 8),
+    ),
+    BoxShadow(
+      color: Colors.black.withOpacity(0.05),
+      blurRadius: 12,
+      offset: const Offset(0, 4),
+    ),
+  ];
+
+  // Colored shadows for specific use cases
+  static List<BoxShadow> primaryShadow({double opacity = 0.2}) => [
+    BoxShadow(
+      color: AppColors.primaryBlue.withOpacity(opacity),
+      blurRadius: 12,
+      offset: const Offset(0, 4),
+    ),
+  ];
+
+  static List<BoxShadow> successShadow({double opacity = 0.2}) => [
+    BoxShadow(
+      color: AppColors.successColor.withOpacity(opacity),
+      blurRadius: 12,
+      offset: const Offset(0, 4),
+    ),
+  ];
+
+  static List<BoxShadow> errorShadow({double opacity = 0.2}) => [
+    BoxShadow(
+      color: AppColors.errorColor.withOpacity(opacity),
+      blurRadius: 12,
+      offset: const Offset(0, 4),
+    ),
+  ];
+}
+
+// Animation Durations
+class AppDurations {
+  static const fast = Duration(milliseconds: 150);
+  static const medium = Duration(milliseconds: 250);
+  static const slow = Duration(milliseconds: 350);
+  static const verySlow = Duration(milliseconds: 500);
+}
+
+// Animation Curves
+class AppCurves {
+  static const easeIn = Curves.easeIn;
+  static const easeOut = Curves.easeOut;
+  static const easeInOut = Curves.easeInOut;
+  static const smooth = Curves.easeInOutCubic;
+  static const bounce = Curves.bounceOut;
 }
