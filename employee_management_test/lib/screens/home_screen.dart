@@ -60,20 +60,26 @@ class HomeScreen extends StatelessWidget {
                 margin: const EdgeInsets.all(AppSpacing.lg),
                 padding: const EdgeInsets.all(AppSpacing.xxl),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppColors.primaryBlue, AppColors.primaryDark],
+                  gradient: LinearGradient(
+                    colors: AppColors.gradientSoftBlue,
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(AppBorderRadius.large),
-                  boxShadow: AppShadows.primaryShadow(opacity: 0.3),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.gradientSoftBlue[0].withOpacity(0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Column(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.black.withOpacity(0.15),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -93,14 +99,26 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      'Chấm công thông minh • Tính lương tự động',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white.withOpacity(0.9),
-                        fontWeight: FontWeight.w500,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg,
+                        vertical: AppSpacing.sm,
                       ),
-                      textAlign: TextAlign.center,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(
+                          AppBorderRadius.rounded,
+                        ),
+                      ),
+                      child: const Text(
+                        'Chấm công thông minh • Tính lương tự động',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   ],
                 ),
@@ -117,24 +135,22 @@ class HomeScreen extends StatelessWidget {
                     Row(
                       children: [
                         Expanded(
-                          child: _buildQuickActionButton(
+                          child: _buildQuickActionButtonWithGradient(
                             context,
                             icon: Icons.login_rounded,
                             label: 'Check In',
-                            color: AppColors.successColor,
-                            lightColor: AppColors.successLight,
+                            gradient: AppColors.gradientSoftGreen,
                             onTap: () =>
                                 Navigator.pushNamed(context, '/face/checkin'),
                           ),
                         ),
                         const SizedBox(width: AppSpacing.md),
                         Expanded(
-                          child: _buildQuickActionButton(
+                          child: _buildQuickActionButtonWithGradient(
                             context,
                             icon: Icons.logout_rounded,
                             label: 'Check Out',
-                            color: AppColors.errorColor,
-                            lightColor: AppColors.errorLight,
+                            gradient: AppColors.gradientSoftOrange,
                             onTap: () =>
                                 Navigator.pushNamed(context, '/face/checkin'),
                           ),
@@ -155,55 +171,50 @@ class HomeScreen extends StatelessWidget {
                   children: [
                     const Text('Chức Năng Chính', style: AppTextStyles.h5),
                     const SizedBox(height: AppSpacing.md),
-                    _buildFeatureCard(
+                    _buildFeatureCardWithGradient(
                       context,
                       icon: Icons.people_alt_rounded,
                       title: 'Quản Lý Nhân Viên',
                       subtitle: 'Thêm, sửa, xóa thông tin nhân viên',
-                      color: AppColors.primaryBlue,
-                      lightColor: AppColors.primaryLighter,
+                      gradient: AppColors.gradientSoftBlue,
                       onTap: () => Navigator.pushNamed(context, '/employees'),
                     ),
                     const SizedBox(height: AppSpacing.md),
-                    _buildFeatureCard(
+                    _buildFeatureCardWithGradient(
                       context,
                       icon: Icons.business_rounded,
                       title: 'Quản Lý Phòng Ban',
                       subtitle: 'Tổ chức và phân chia phòng ban',
-                      color: AppColors.secondaryTeal,
-                      lightColor: AppColors.secondaryTealLight,
+                      gradient: AppColors.gradientSoftTeal,
                       onTap: () => Navigator.pushNamed(context, '/departments'),
                     ),
                     const SizedBox(height: AppSpacing.md),
-                    _buildFeatureCard(
+                    _buildFeatureCardWithGradient(
                       context,
                       icon: Icons.face_retouching_natural,
                       title: 'Đăng Ký Face ID',
                       subtitle: 'Đăng ký khuôn mặt cho nhân viên',
-                      color: AppColors.secondaryGreen,
-                      lightColor: AppColors.secondaryGreenLight,
+                      gradient: AppColors.gradientSoftGreen,
                       onTap: () =>
                           Navigator.pushNamed(context, '/face/register'),
                     ),
                     const SizedBox(height: AppSpacing.md),
-                    _buildFeatureCard(
+                    _buildFeatureCardWithGradient(
                       context,
                       icon: Icons.camera_alt_rounded,
                       title: 'Chấm Công Face ID',
                       subtitle: 'Check in/out bằng nhận diện khuôn mặt',
-                      color: AppColors.secondaryOrange,
-                      lightColor: AppColors.secondaryOrangeLight,
+                      gradient: AppColors.gradientSoftOrange,
                       onTap: () =>
                           Navigator.pushNamed(context, '/face/checkin'),
                     ),
                     const SizedBox(height: AppSpacing.md),
-                    _buildFeatureCard(
+                    _buildFeatureCardWithGradient(
                       context,
                       icon: Icons.attach_money_rounded,
                       title: 'Quản Lý Lương',
                       subtitle: 'Tính toán và quản lý lương nhân viên',
-                      color: AppColors.secondaryPurple,
-                      lightColor: AppColors.secondaryPurpleLight,
+                      gradient: AppColors.gradientSoftPurple,
                       onTap: () => Navigator.pushNamed(context, '/payroll'),
                     ),
                     const SizedBox(height: AppSpacing.xxl),
@@ -252,6 +263,68 @@ class HomeScreen extends StatelessWidget {
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                     color: color,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActionButtonWithGradient(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required List<Color> gradient,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: gradient,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+            boxShadow: [
+              BoxShadow(
+                color: gradient.first.withOpacity(0.25),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              vertical: AppSpacing.lg,
+              horizontal: AppSpacing.md,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: Colors.white, size: 22),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
                   ),
                 ),
               ],
@@ -322,6 +395,92 @@ class HomeScreen extends StatelessWidget {
                   Icons.arrow_forward_ios_rounded,
                   size: 16,
                   color: AppColors.textTertiary,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFeatureCardWithGradient(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required List<Color> gradient,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppBorderRadius.large),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: gradient,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(AppBorderRadius.large),
+            boxShadow: [
+              BoxShadow(
+                color: gradient.first.withOpacity(0.25),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+                  ),
+                  child: Icon(icon, color: Colors.white, size: 28),
+                ),
+                const SizedBox(width: AppSpacing.lg),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.white.withOpacity(0.9),
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 14,
+                    color: Colors.white,
+                  ),
                 ),
               ],
             ),

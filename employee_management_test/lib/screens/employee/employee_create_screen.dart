@@ -61,7 +61,9 @@ class _EmployeeCreateScreenState extends State<EmployeeCreateScreen> {
   Future<void> _selectDateOfBirth() async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now().subtract(const Duration(days: 6570)), // 18 years ago
+      initialDate: DateTime.now().subtract(
+        const Duration(days: 6570),
+      ), // 18 years ago
       firstDate: DateTime(1950),
       lastDate: DateTime.now(),
       locale: const Locale('vi', 'VN'),
@@ -89,10 +91,16 @@ class _EmployeeCreateScreenState extends State<EmployeeCreateScreen> {
     try {
       final request = CreateEmployeeRequest(
         fullName: _fullNameController.text.trim(),
-        email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
-        phoneNumber: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
+        email: _emailController.text.trim().isEmpty
+            ? null
+            : _emailController.text.trim(),
+        phoneNumber: _phoneController.text.trim().isEmpty
+            ? null
+            : _phoneController.text.trim(),
         departmentId: _selectedDepartmentId!,
-        position: _positionController.text.trim().isEmpty ? null : _positionController.text.trim(),
+        position: _positionController.text.trim().isEmpty
+            ? null
+            : _positionController.text.trim(),
         dateOfBirth: _selectedDateOfBirth,
       );
 
@@ -165,10 +173,7 @@ class _EmployeeCreateScreenState extends State<EmployeeCreateScreen> {
 
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 
@@ -188,7 +193,9 @@ class _EmployeeCreateScreenState extends State<EmployeeCreateScreen> {
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryBlue),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  AppColors.primaryBlue,
+                ),
               ),
             )
           : SingleChildScrollView(
@@ -203,11 +210,16 @@ class _EmployeeCreateScreenState extends State<EmployeeCreateScreen> {
                       padding: const EdgeInsets.all(AppSpacing.lg),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [AppColors.primaryBlue, AppColors.primaryDark],
+                          colors: [
+                            AppColors.primaryBlue,
+                            AppColors.primaryDark,
+                          ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
-                        borderRadius: BorderRadius.circular(AppBorderRadius.large),
+                        borderRadius: BorderRadius.circular(
+                          AppBorderRadius.large,
+                        ),
                         boxShadow: AppShadows.medium,
                       ),
                       child: Row(
@@ -216,7 +228,9 @@ class _EmployeeCreateScreenState extends State<EmployeeCreateScreen> {
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: Colors.white24,
-                              borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+                              borderRadius: BorderRadius.circular(
+                                AppBorderRadius.medium,
+                              ),
                             ),
                             child: const Icon(
                               Icons.person_add,
@@ -275,7 +289,9 @@ class _EmployeeCreateScreenState extends State<EmployeeCreateScreen> {
                       keyboardType: TextInputType.emailAddress,
                       validator: (value) {
                         if (value != null && value.isNotEmpty) {
-                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                          if (!RegExp(
+                            r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                          ).hasMatch(value)) {
                             return 'Email không hợp lệ';
                           }
                         }
@@ -303,23 +319,34 @@ class _EmployeeCreateScreenState extends State<EmployeeCreateScreen> {
 
                     // Department
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+                        borderRadius: BorderRadius.circular(
+                          AppBorderRadius.medium,
+                        ),
                         boxShadow: AppShadows.small,
                       ),
                       child: DropdownButtonFormField<int>(
                         value: _selectedDepartmentId,
                         decoration: const InputDecoration(
                           labelText: 'Phòng ban *',
-                          prefixIcon: Icon(Icons.business, color: AppColors.primaryBlue),
+                          prefixIcon: Icon(
+                            Icons.business,
+                            color: AppColors.primaryBlue,
+                          ),
                           border: InputBorder.none,
                         ),
-                        items: _departments.map((dept) => DropdownMenuItem<int>(
-                          value: dept.id,
-                          child: Text('${dept.code} - ${dept.name}'),
-                        )).toList(),
+                        items: _departments
+                            .map(
+                              (dept) => DropdownMenuItem<int>(
+                                value: dept.id,
+                                child: Text('${dept.code} - ${dept.name}'),
+                              ),
+                            )
+                            .toList(),
                         onChanged: (value) {
                           setState(() {
                             _selectedDepartmentId = value;
@@ -350,12 +377,17 @@ class _EmployeeCreateScreenState extends State<EmployeeCreateScreen> {
                         padding: const EdgeInsets.all(AppSpacing.lg),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+                          borderRadius: BorderRadius.circular(
+                            AppBorderRadius.medium,
+                          ),
                           boxShadow: AppShadows.small,
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.calendar_today, color: AppColors.primaryBlue),
+                            const Icon(
+                              Icons.calendar_today,
+                              color: AppColors.primaryBlue,
+                            ),
                             const SizedBox(width: AppSpacing.lg),
                             Expanded(
                               child: Column(
@@ -370,7 +402,9 @@ class _EmployeeCreateScreenState extends State<EmployeeCreateScreen> {
                                   const SizedBox(height: 4),
                                   Text(
                                     _selectedDateOfBirth != null
-                                        ? DateFormat('dd/MM/yyyy').format(_selectedDateOfBirth!)
+                                        ? DateFormat(
+                                            'dd/MM/yyyy',
+                                          ).format(_selectedDateOfBirth!)
                                         : 'Chọn ngày sinh',
                                     style: AppTextStyles.bodyMedium.copyWith(
                                       color: _selectedDateOfBirth != null
@@ -381,7 +415,10 @@ class _EmployeeCreateScreenState extends State<EmployeeCreateScreen> {
                                 ],
                               ),
                             ),
-                            const Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
+                            const Icon(
+                              Icons.arrow_drop_down,
+                              color: AppColors.textSecondary,
+                            ),
                           ],
                         ),
                       ),
@@ -392,9 +429,14 @@ class _EmployeeCreateScreenState extends State<EmployeeCreateScreen> {
                     Container(
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [AppColors.primaryBlue, AppColors.primaryDark],
+                          colors: [
+                            AppColors.primaryBlue,
+                            AppColors.primaryDark,
+                          ],
                         ),
-                        borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+                        borderRadius: BorderRadius.circular(
+                          AppBorderRadius.medium,
+                        ),
                         boxShadow: AppShadows.medium,
                       ),
                       child: ElevatedButton(
@@ -404,7 +446,9 @@ class _EmployeeCreateScreenState extends State<EmployeeCreateScreen> {
                           shadowColor: Colors.transparent,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+                            borderRadius: BorderRadius.circular(
+                              AppBorderRadius.medium,
+                            ),
                           ),
                         ),
                         child: _isSubmitting
@@ -413,7 +457,9 @@ class _EmployeeCreateScreenState extends State<EmployeeCreateScreen> {
                                 width: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
                                 ),
                               )
                             : Row(
