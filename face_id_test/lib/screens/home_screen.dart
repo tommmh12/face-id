@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../config/app_theme.dart';
 import '../services/face_service.dart';
 import '../utils/image_utils.dart';
 import '../widgets/app_button.dart';
@@ -12,10 +13,15 @@ import '../widgets/result_card.dart';
 enum AttendanceAction { checkIn, checkOut }
 
 extension AttendanceActionX on AttendanceAction {
-  String get endpoint => this == AttendanceAction.checkIn ? 'checkin' : 'checkout';
-  String get buttonLabel => this == AttendanceAction.checkIn ? 'Check In' : 'Check Out';
-  IconData get icon => this == AttendanceAction.checkIn ? Icons.camera_alt_outlined : Icons.logout_rounded;
-  String get captureTitle => this == AttendanceAction.checkIn ? 'Check In Photo' : 'Check Out Photo';
+  String get endpoint =>
+      this == AttendanceAction.checkIn ? 'checkin' : 'checkout';
+  String get buttonLabel =>
+      this == AttendanceAction.checkIn ? 'Check In' : 'Check Out';
+  IconData get icon => this == AttendanceAction.checkIn
+      ? Icons.camera_alt_outlined
+      : Icons.logout_rounded;
+  String get captureTitle =>
+      this == AttendanceAction.checkIn ? 'Check In Photo' : 'Check Out Photo';
 }
 
 class HomeScreen extends StatefulWidget {
@@ -32,12 +38,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Face Recognition Attendance'),
-      ),
+      appBar: AppBar(title: const Text('Face Recognition Attendance')),
       body: Stack(
         children: [
           SafeArea(
@@ -46,20 +48,91 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // Welcome Banner with Soft Gradient
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: AppColors.gradientSoftBlue
+                            .map((c) => c)
+                            .toList(),
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(
+                        AppBorderRadius.large,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.gradientSoftBlue[0].withOpacity(
+                            0.25,
+                          ),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.face_retouching_natural,
+                                color: Colors.white,
+                                size: 28,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Face Recognition',
+                                    style: AppTextStyles.h5.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Quick attendance check',
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      color: Colors.white.withOpacity(0.85),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
                   Text(
                     'Quick Actions',
-                    style: theme.textTheme.titleMedium,
+                    style: AppTextStyles.h6.copyWith(
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   AppButton(
-                    label: '📷 ${AttendanceAction.checkIn.buttonLabel}',
+                    label: AttendanceAction.checkIn.buttonLabel,
                     icon: AttendanceAction.checkIn.icon,
                     onPressed: () => _handleAction(AttendanceAction.checkIn),
                     enabled: !_isUploading,
                   ),
                   const SizedBox(height: 16),
                   AppButton(
-                    label: '🚪 ${AttendanceAction.checkOut.buttonLabel}',
+                    label: AttendanceAction.checkOut.buttonLabel,
                     icon: AttendanceAction.checkOut.icon,
                     onPressed: () => _handleAction(AttendanceAction.checkOut),
                     enabled: !_isUploading,
@@ -67,7 +140,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 28),
                   Text(
                     'Last Result',
-                    style: theme.textTheme.titleMedium,
+                    style: AppTextStyles.h6.copyWith(
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Expanded(
@@ -118,10 +193,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final base64Image = await Navigator.of(context).push<String?>(
       MaterialPageRoute(
-        builder: (_) => _CameraCaptureScreen(
-          camera: camera,
-          action: action,
-        ),
+        builder: (_) => _CameraCaptureScreen(camera: camera, action: action),
         fullscreenDialog: true,
       ),
     );
@@ -137,13 +209,17 @@ class _HomeScreenState extends State<HomeScreen> {
       final bool success = data['success'] == true;
       final num? confidenceValue = data['confidence'] as num?;
       final Map<String, dynamic>? matchedEmployee =
-          data['matchedEmployee'] is Map<String, dynamic> ? data['matchedEmployee'] as Map<String, dynamic> : null;
+          data['matchedEmployee'] is Map<String, dynamic>
+          ? data['matchedEmployee'] as Map<String, dynamic>
+          : null;
 
       final AttendanceResult result = AttendanceResult(
         actionLabel: action.buttonLabel,
         success: success,
         status: (data['status'] as String?) ?? '',
-        message: (data['message'] as String?) ?? (success ? 'Verification completed.' : 'Verification failed.'),
+        message:
+            (data['message'] as String?) ??
+            (success ? 'Verification completed.' : 'Verification failed.'),
         employeeName: matchedEmployee?['fullName'] as String?,
         confidence: confidenceValue?.toDouble(),
       );
@@ -265,13 +341,12 @@ class _CameraCaptureScreenState extends State<_CameraCaptureScreen> {
                     children: [
                       Text(
                         'Align your face within the frame and tap capture.',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white70),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
                       ),
                       const SizedBox(height: 16),
-                      _CaptureButton(
-                        onTap: _takePicture,
-                        isBusy: _isCapturing,
-                      ),
+                      _CaptureButton(onTap: _takePicture, isBusy: _isCapturing),
                     ],
                   ),
                 ),
@@ -283,7 +358,9 @@ class _CameraCaptureScreenState extends State<_CameraCaptureScreen> {
             return Center(
               child: Text(
                 'Camera failed to start',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white70),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
               ),
             );
           }
@@ -336,7 +413,10 @@ class _CaptureButton extends StatelessWidget {
             ? const SizedBox(
                 width: 28,
                 height: 28,
-                child: CircularProgressIndicator(strokeWidth: 3, color: Colors.white),
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  color: Colors.white,
+                ),
               )
             : Container(
                 width: 60,
