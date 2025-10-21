@@ -7,6 +7,7 @@ import '../../utils/pdf_generator.dart';
 import '../../utils/permission_helper.dart';
 import '../../config/app_theme.dart';
 import 'audit_log_screen.dart';
+import 'widgets/edit_adjustment_dialog.dart';
 
 /// 💰 Employee Salary Detail Screen - Real Data from API
 /// 
@@ -45,7 +46,6 @@ class _EmployeeSalaryDetailScreenV2State extends State<EmployeeSalaryDetailScree
   // ✅ Permission System Integration
   User? _currentUser;
   bool get _canEdit => PermissionHelper.canEditPayroll(_currentUser);
-  bool get _canExportPDF => PermissionHelper.canExportPDF(_currentUser, employeeId: widget.employeeId);
 
   @override
   void initState() {
@@ -220,6 +220,10 @@ class _EmployeeSalaryDetailScreenV2State extends State<EmployeeSalaryDetailScree
             _buildAllowancesSection(),
             const SizedBox(height: 16),
             _buildAdjustmentsSection(),
+            const SizedBox(height: 16),
+            
+            // 💰 TÙY CHỈNH LƯƠNG NHÂN VIÊN (NEW FEATURE)
+            _buildSalaryCustomizationSection(),
             const SizedBox(height: 80),
           ],
         ),
@@ -338,7 +342,6 @@ class _EmployeeSalaryDetailScreenV2State extends State<EmployeeSalaryDetailScree
   /// 📊 Dashboard Summary Card - Hiển thị các chỉ số chính
   Widget _buildDashboardSummaryCard() {
     final isNegative = _payrollData!.netSalary < 0;
-    final isPeriodClosed = false; // TODO: Get from period data
 
     return Card(
       elevation: 4,
@@ -370,19 +373,7 @@ class _EmployeeSalaryDetailScreenV2State extends State<EmployeeSalaryDetailScree
                     letterSpacing: 0.5,
                   ),
                 ),
-                // Chip trạng thái kỳ lương
-                Chip(
-                  label: Text(
-                    isPeriodClosed ? 'Đã Chốt' : 'Đang Mở',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  backgroundColor: isPeriodClosed ? Colors.grey : PayrollColors.primary,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                ),
+                // Period status chip removed - needs backend implementation
               ],
             ),
             const SizedBox(height: 20),
@@ -559,8 +550,6 @@ class _EmployeeSalaryDetailScreenV2State extends State<EmployeeSalaryDetailScree
 
   Widget _buildIncomeSection() {
     final income = _payrollData!.adjustedGrossIncome;
-    final baseSalary = _payrollData!.baseSalaryActual;
-    final standardWorkingDays = 22.0; // TODO: Get from payroll rule
     
     return Card(
       elevation: 2,
@@ -867,9 +856,9 @@ class _EmployeeSalaryDetailScreenV2State extends State<EmployeeSalaryDetailScree
                   _getAdjustmentIcon(adj.adjustmentType),
                   color: _getAdjustmentColor(adj.adjustmentType),
                 ),
-                title: Text(adj.reason),
+                title: Text(adj.description),
                 subtitle: Text(
-                  '${DateFormat('dd/MM/yyyy').format(adj.adjustmentDate)} • ${adj.adjustmentType}',
+                  '${DateFormat('dd/MM/yyyy').format(adj.effectiveDate)} • ${adj.getTypeLabel()}',
                   style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
                 trailing: Text(
@@ -889,6 +878,386 @@ class _EmployeeSalaryDetailScreenV2State extends State<EmployeeSalaryDetailScree
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// 💰 TÙY CHỈNH LƯƠNG NHÂN VIÊN - Edit Salary Adjustments
+  Widget _buildSalaryCustomizationSection() {
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            colors: [
+              PayrollColors.primary.withOpacity(0.05),
+              Colors.white,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header với icon nổi bật
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: PayrollColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.tune_rounded, 
+                      color: PayrollColors.primary, 
+                      size: 28
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '💰 TÙY CHỈNH LƯƠNG NHÂN VIÊN',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Chỉnh sửa thưởng, phạt và điều chỉnh lương',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              const Divider(),
+              const SizedBox(height: 16),
+              
+              // Danh sách adjustments có thể chỉnh sửa
+              if (_adjustments.isEmpty)
+                _buildEmptyAdjustmentsState()
+              else
+                _buildEditableAdjustmentsList(),
+              
+              const SizedBox(height: 20),
+              
+              // Action buttons
+              if (_canEdit)
+                _buildCustomizationActionButtons(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Empty state khi chưa có adjustments
+  Widget _buildEmptyAdjustmentsState() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.money_off_rounded,
+            size: 48,
+            color: Colors.grey.shade400,
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Chưa có khoản điều chỉnh lương nào',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Thêm thưởng, phạt hoặc điều chỉnh để tùy chỉnh lương nhân viên',
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey.shade600,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Danh sách adjustments có thể chỉnh sửa
+  Widget _buildEditableAdjustmentsList() {
+    return Column(
+      children: _adjustments.map((adjustment) => 
+        _buildEditableAdjustmentCard(adjustment)
+      ).toList(),
+    );
+  }
+
+  /// Card cho từng adjustment có thể chỉnh sửa
+  Widget _buildEditableAdjustmentCard(SalaryAdjustmentResponse adjustment) {
+    final canEdit = adjustment.canEdit; // Chỉ edit được nếu chưa processed
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: adjustment.getTypeColor().withOpacity(0.3),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: adjustment.getTypeColor().withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header row
+            Row(
+              children: [
+                // Type badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: adjustment.getTypeColor().withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: adjustment.getTypeColor().withOpacity(0.3),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _getAdjustmentIcon(adjustment.adjustmentType),
+                        size: 14,
+                        color: adjustment.getTypeColor(),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        adjustment.getTypeLabel(),
+                        style: TextStyle(
+                          color: adjustment.getTypeColor(),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                
+                // Amount
+                Text(
+                  _currencyFormat.format(adjustment.amount),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: adjustment.getTypeColor(),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            
+            // Description
+            Text(
+              adjustment.description,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 8),
+            
+            // Details row
+            Row(
+              children: [
+                Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade600),
+                const SizedBox(width: 4),
+                Text(
+                  DateFormat('dd/MM/yyyy').format(adjustment.effectiveDate),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Icon(Icons.person, size: 14, color: Colors.grey.shade600),
+                const SizedBox(width: 4),
+                Text(
+                  adjustment.lastUpdatedBy ?? adjustment.createdBy,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                const Spacer(),
+                
+                // Status và Edit button
+                if (!canEdit) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.lock, size: 12, color: Colors.grey.shade600),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Đã xử lý',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ] else if (_canEdit) ...[
+                  ElevatedButton.icon(
+                    onPressed: () => _editAdjustment(adjustment),
+                    icon: const Icon(Icons.edit_rounded, size: 16),
+                    label: const Text('Sửa'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: adjustment.getTypeColor(),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Action buttons cho tùy chỉnh lương
+  Widget _buildCustomizationActionButtons() {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: () => _showAddAdjustmentDialog(type: 'BONUS'),
+            icon: const Icon(Icons.add_circle, color: PayrollColors.success),
+            label: const Text(
+              'Thêm thưởng',
+              style: TextStyle(color: PayrollColors.success),
+            ),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: PayrollColors.success),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: () => _showAddAdjustmentDialog(type: 'PENALTY'),
+            icon: const Icon(Icons.remove_circle, color: PayrollColors.error),
+            label: const Text(
+              'Thêm phạt',
+              style: TextStyle(color: PayrollColors.error),
+            ),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: PayrollColors.error),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: _recalculateSalary,
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Tính lại'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: PayrollColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Chỉnh sửa adjustment (mở EditAdjustmentDialog)
+  void _editAdjustment(SalaryAdjustmentResponse adjustment) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => EditAdjustmentDialog(
+        adjustment: adjustment,
+        periodId: widget.periodId,
+        onUpdated: () {
+          // Reload data sau khi cập nhật
+          _loadData();
+          
+          // Show success message
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Đã cập nhật thành công ${adjustment.getTypeLabel().toLowerCase()} #${adjustment.id}!',
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: PayrollColors.success,
+              duration: const Duration(seconds: 3),
+              action: SnackBarAction(
+                label: 'Xem',
+                textColor: Colors.white,
+                onPressed: () {
+                  // Scroll to adjustments section or navigate
+                },
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -931,7 +1300,7 @@ class _EmployeeSalaryDetailScreenV2State extends State<EmployeeSalaryDetailScree
             title: const Text('Thêm thưởng'),
             onTap: () {
               Navigator.pop(context);
-              _showAddAdjustmentDialog(type: 'Bonus');
+              _showAddAdjustmentDialog(type: 'BONUS');
             },
           ),
           ListTile(
@@ -939,7 +1308,7 @@ class _EmployeeSalaryDetailScreenV2State extends State<EmployeeSalaryDetailScree
             title: const Text('Thêm phạt'),
             onTap: () {
               Navigator.pop(context);
-              _showAddAdjustmentDialog(type: 'Penalty');
+              _showAddAdjustmentDialog(type: 'PENALTY');
             },
           ),
           ListTile(
@@ -964,14 +1333,17 @@ class _EmployeeSalaryDetailScreenV2State extends State<EmployeeSalaryDetailScree
     );
   }
 
-  void _showAddAdjustmentDialog({String type = 'Bonus'}) {
+  void _showAddAdjustmentDialog({String type = 'BONUS'}) {
     final reasonController = TextEditingController();
     final amountController = TextEditingController();
+    
+    final isBonus = type.toUpperCase() == 'BONUS';
+    final typeName = isBonus ? 'thưởng' : 'phạt';
     
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('➕ Thêm ${type == 'Bonus' ? 'thưởng' : 'phạt'}'),
+        title: Text('➕ Thêm $typeName'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1016,7 +1388,7 @@ class _EmployeeSalaryDetailScreenV2State extends State<EmployeeSalaryDetailScree
                 periodId: widget.periodId,
                 adjustmentType: type,
                 reason: reasonController.text,
-                amount: type == 'Penalty' ? -amount : amount,
+                amount: type.toUpperCase() == 'PENALTY' ? -amount : amount,
                 adjustmentDate: DateTime.now(),
                 approvedBy: 'HR', // TODO: Get from auth
               );

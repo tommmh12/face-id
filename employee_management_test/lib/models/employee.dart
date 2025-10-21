@@ -34,7 +34,7 @@ class Employee {
 factory Employee.fromJson(Map<String, dynamic> json) {
   return Employee(
     id: json['id'] ?? 0,
-    employeeCode: json['employeeCode']?.toString() ?? '',
+    employeeCode: json['employeeCode']?.toString() ?? 'EMP${json['id'] ?? 0}',
     fullName: json['fullName']?.toString() ?? 'Chưa có tên',
     email: json['email']?.toString(),
     phoneNumber: json['phoneNumber']?.toString(),

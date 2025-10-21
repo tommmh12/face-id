@@ -391,6 +391,68 @@ class PayrollApiService extends BaseApiService {
     return response;
   }
 
+  /// PUT /api/payroll/adjustment/{id} 🆕 NEW METHOD (V2.1)
+  /// Cập nhật điều chỉnh lương (sửa thưởng/phạt)
+  /// Chỉ cho phép sửa những adjustment chưa được processed
+  Future<ApiResponse<SalaryAdjustmentResponse>> updateSalaryAdjustment(
+    int adjustmentId, 
+    UpdateSalaryAdjustmentRequest request
+  ) async {
+    AppLogger.apiRequest('$_endpoint/adjustment/$adjustmentId', method: 'PUT', data: {
+      'adjustmentType': request.adjustmentType,
+      'amount': request.amount,
+      'effectiveDate': request.effectiveDate.toIso8601String(),
+      'description': request.description,
+      'updatedBy': request.updatedBy,
+      'updateReason': request.updateReason,
+    });
+    
+    final response = await handleRequest(
+      () async => CustomHttpClient.put(
+        Uri.parse('${ApiConfig.baseUrl}$_endpoint/adjustment/$adjustmentId'),
+        headers: await ApiConfig.getAuthenticatedHeaders(),
+        body: json.encode(request.toJson()),
+      ),
+      (json) => SalaryAdjustmentResponse.fromJson(json['data'] ?? json), // Handle nested response
+    );
+    
+    AppLogger.apiResponse(
+      '$_endpoint/adjustment/$adjustmentId',
+      success: response.success,
+      message: response.message,
+      data: response.data != null 
+        ? 'Updated: ${response.data!.adjustmentType} - ${response.data!.amount}' 
+        : null,
+    );
+    
+    return response;
+  }
+
+  /// POST /api/payroll/recalculate/{periodId} 🔄 RECALCULATE METHOD  
+  /// Tính toán lại lương cho kỳ (Bắt buộc gọi sau mọi thay đổi)
+  Future<ApiResponse<RecalculatePayrollResponse>> recalculatePayroll(int periodId) async {
+    AppLogger.apiRequest('$_endpoint/recalculate/$periodId', method: 'POST');
+    
+    final response = await handleRequest(
+      () async => CustomHttpClient.post(
+        Uri.parse('${ApiConfig.baseUrl}$_endpoint/recalculate/$periodId'),
+        headers: await ApiConfig.getAuthenticatedHeaders(),
+      ),
+      (json) => RecalculatePayrollResponse.fromJson(json),
+    );
+    
+    AppLogger.apiResponse(
+      '$_endpoint/recalculate/$periodId',
+      success: response.success,
+      message: response.message,
+      data: response.data != null 
+        ? 'Recalculated: ${response.data!.recalculatedCount}/${response.data!.totalEmployees}' 
+        : null,
+    );
+    
+    return response;
+  }
+
   /// POST /api/payroll/attendance/correct
   /// Chỉnh sửa chấm công (sửa ngày công, giờ OT)
   Future<ApiResponse<AttendanceCorrectionResponse>> correctAttendance(CorrectAttendanceRequest request) async {
@@ -421,30 +483,7 @@ class PayrollApiService extends BaseApiService {
     return response;
   }
 
-  /// POST /api/payroll/recalculate/{periodId}
-  /// Tính lại toàn bộ lương trong kỳ (sau khi chỉnh sửa)
-  Future<ApiResponse<GeneratePayrollResponse>> recalculatePayroll(int periodId) async {
-    AppLogger.apiRequest('$_endpoint/recalculate/$periodId', method: 'POST');
-    
-    final response = await handleRequest(
-      () async => CustomHttpClient.post(
-        Uri.parse('${ApiConfig.baseUrl}$_endpoint/recalculate/$periodId'),
-        headers: await ApiConfig.getAuthenticatedHeaders(), //  FIXED: Use auth headers
-      ),
-      (json) => GeneratePayrollResponse.fromJson(json),
-    );
-    
-    AppLogger.apiResponse(
-      '$_endpoint/recalculate/$periodId',
-      success: response.success,
-      message: response.message,
-      data: response.data != null 
-        ? 'Total: ${response.data!.totalEmployees}, Success: ${response.data!.successCount}'
-        : null,
-    );
-    
-    return response;
-  }
+
 
   /// PUT /api/payroll/periods/{periodId}/status
   /// Cập nhật trạng thái kỳ lương (Draft/Processing/Closed)

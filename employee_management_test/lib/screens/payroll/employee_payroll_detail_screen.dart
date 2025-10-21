@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/dto/payroll_dtos.dart';
+import '../../services/payroll_api_service.dart';
 import '../../utils/app_logger.dart';
 
 /// Màn hình chi tiết bảng lương của 1 nhân viên
@@ -51,6 +52,21 @@ class _EmployeePayrollDetailScreenState extends State<EmployeePayrollDetailScree
   bool _isLoading = false;
   bool _isExporting = false;
   bool _isSendingEmail = false;
+  String? _errorMessage;
+  final _currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: '₫', decimalDigits: 0);
+
+  /// Safe currency formatting với error handling
+  String _safeCurrencyFormat(dynamic value) {
+    try {
+      if (value == null) return '₫0';
+      
+      final double amount = value is double ? value : double.tryParse(value.toString()) ?? 0.0;
+      return _currencyFormat.format(amount);
+    } catch (e) {
+      debugPrint('Currency format error: $e');
+      return '₫0';
+    }
+  }
 
   @override
   void initState() {
@@ -67,46 +83,39 @@ class _EmployeePayrollDetailScreenState extends State<EmployeePayrollDetailScree
 
   /// Load chi tiết bảng lương từ API
   Future<void> _loadPayrollDetail() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    
     AppLogger.info('Loading payroll detail for employee ${widget.employeeId}, period ${widget.periodId}', tag: 'EmployeePayrollDetail');
 
     try {
-      // TODO: Implement GET /api/payroll/records/employee/{employeeId}/period/{periodId}
-      // For now, create dummy data
-      await Future.delayed(const Duration(seconds: 1));
+      // Gọi API thực tế để lấy chi tiết bảng lương
+      final payrollService = PayrollApiService();
+      final response = await payrollService.getEmployeePayroll(widget.periodId, widget.employeeId);
       
-      _payrollRecord = PayrollRecordResponse(
-        id: 1,
-        payrollPeriodId: widget.periodId,
-        employeeId: widget.employeeId,
-        employeeName: widget.employeeName,
-        totalWorkingDays: 22,
-        totalOTHours: 10,
-        totalOTPayment: 1500000,
-        baseSalaryActual: 10000000,
-        totalAllowances: 2000000,
-        bonus: 500000,
-        adjustedGrossIncome: 14000000,
-        insuranceDeduction: 1470000, // BHXH 8% + BHYT 1.5% + BHTN 1% = 10.5%
-        pitDeduction: 245000,
-        otherDeductions: 50000,
-        netSalary: 12235000,
-        calculatedAt: DateTime.now(),
-        notes: null,
-      );
-
-      setState(() {});
-      AppLogger.success('Loaded payroll detail', tag: 'EmployeePayrollDetail');
+      if (response.success && response.data != null) {
+        setState(() {
+          _payrollRecord = response.data!;
+          _errorMessage = null;
+        });
+        AppLogger.success('Loaded payroll detail: ${response.data!.employeeName} - Net: ${_safeCurrencyFormat(response.data!.netSalary)}', tag: 'EmployeePayrollDetail');
+      } else {
+        // Không có dữ liệu lương (chưa tính lương cho kỳ này)
+        setState(() {
+          _payrollRecord = null;
+          _errorMessage = response.message ?? 'Nhân viên này chưa có dữ liệu lương cho kỳ hiện tại.\n\nCó thể nhân viên chưa được tính lương hoặc chưa có trong kỳ lương này.';
+        });
+        
+        AppLogger.warning('No payroll data found: ${response.message}', tag: 'EmployeePayrollDetail');
+      }
     } catch (e) {
       AppLogger.error('Exception loading payroll detail', error: e, tag: 'EmployeePayrollDetail');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Không thể tải chi tiết bảng lương'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      setState(() {
+        _payrollRecord = null;
+        _errorMessage = 'Lỗi kết nối đến server:\n${e.toString()}\n\nVui lòng kiểm tra kết nối mạng và thử lại.';
+      });
     } finally {
       setState(() => _isLoading = false);
     }
@@ -283,23 +292,85 @@ class _EmployeePayrollDetailScreenState extends State<EmployeePayrollDetailScree
 
   /// Build error state
   Widget _buildErrorState() {
+    final isNetworkError = _errorMessage?.contains('kết nối') == true || 
+                          _errorMessage?.contains('server') == true ||
+                          _errorMessage?.contains('timeout') == true;
+    
+    final isNoDataError = _errorMessage?.contains('chưa có dữ liệu') == true ||
+                         _errorMessage?.contains('chưa được tính lương') == true;
+
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 80, color: Colors.grey[400]),
-          const SizedBox(height: 16),
-          Text(
-            'Không thể tải dữ liệu',
-            style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-          ),
-          const SizedBox(height: 16),
-          FilledButton.icon(
-            onPressed: _loadPayrollDetail,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Thử lại'),
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Icon phù hợp với loại lỗi
+            Icon(
+              isNetworkError ? Icons.wifi_off : 
+              isNoDataError ? Icons.info_outline : Icons.error_outline,
+              size: 80, 
+              color: isNetworkError ? Colors.orange[400] : 
+                     isNoDataError ? Colors.blue[400] : Colors.red[400],
+            ),
+            const SizedBox(height: 16),
+            
+            // Title
+            Text(
+              isNetworkError ? 'Lỗi kết nối' :
+              isNoDataError ? 'Chưa có dữ liệu lương' : 'Không thể tải dữ liệu',
+              style: const TextStyle(
+                fontSize: 20, 
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            
+            // Chi tiết lỗi
+            if (_errorMessage != null)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey[300]!),
+                ),
+                child: Text(
+                  _errorMessage!,
+                  style: TextStyle(
+                    fontSize: 14, 
+                    color: Colors.grey[700],
+                    height: 1.4,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            
+            const SizedBox(height: 24),
+            
+            // Action buttons
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                FilledButton.icon(
+                  onPressed: _loadPayrollDetail,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Thử lại'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF0A84FF),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text('Quay lại'),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -456,8 +527,6 @@ class _EmployeePayrollDetailScreenState extends State<EmployeePayrollDetailScree
 
   /// Build income section
   Widget _buildIncomeSection() {
-    final formatter = NumberFormat.currency(locale: 'vi_VN', symbol: '₫');
-
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -491,13 +560,13 @@ class _EmployeePayrollDetailScreenState extends State<EmployeePayrollDetailScree
             const SizedBox(height: 16),
 
             // Income items
-            _buildIncomeItem('Lương cơ bản', _payrollRecord!.baseSalaryActual, formatter),
+            _buildIncomeItem('Lương cơ bản', _payrollRecord!.baseSalaryActual),
             if (_payrollRecord!.totalOTPayment > 0)
-              _buildIncomeItem('Lương làm thêm (${_payrollRecord!.totalOTHours.toStringAsFixed(0)}h)', _payrollRecord!.totalOTPayment, formatter),
+              _buildIncomeItem('Lương làm thêm (${_payrollRecord!.totalOTHours.toStringAsFixed(0)}h)', _payrollRecord!.totalOTPayment),
             if (_payrollRecord!.totalAllowances > 0)
-              _buildIncomeItem('Phụ cấp', _payrollRecord!.totalAllowances, formatter),
+              _buildIncomeItem('Phụ cấp', _payrollRecord!.totalAllowances),
             if (_payrollRecord!.bonus > 0)
-              _buildIncomeItem('Thưởng', _payrollRecord!.bonus, formatter),
+              _buildIncomeItem('Thưởng', _payrollRecord!.bonus),
 
             const Divider(height: 24),
 
@@ -505,7 +574,6 @@ class _EmployeePayrollDetailScreenState extends State<EmployeePayrollDetailScree
             _buildIncomeItem(
               'Tổng thu nhập',
               _payrollRecord!.adjustedGrossIncome,
-              formatter,
               isBold: true,
               color: const Color(0xFF34C759),
             ),
@@ -516,7 +584,7 @@ class _EmployeePayrollDetailScreenState extends State<EmployeePayrollDetailScree
   }
 
   /// Build income item row
-  Widget _buildIncomeItem(String label, double amount, NumberFormat formatter, {bool isBold = false, Color? color}) {
+  Widget _buildIncomeItem(String label, double amount, {bool isBold = false, Color? color}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Row(
@@ -531,7 +599,7 @@ class _EmployeePayrollDetailScreenState extends State<EmployeePayrollDetailScree
             ),
           ),
           Text(
-            formatter.format(amount),
+            _safeCurrencyFormat(amount),
             style: TextStyle(
               fontSize: isBold ? 16 : 14,
               fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
@@ -545,8 +613,6 @@ class _EmployeePayrollDetailScreenState extends State<EmployeePayrollDetailScree
 
   /// Build deduction section
   Widget _buildDeductionSection() {
-    final formatter = NumberFormat.currency(locale: 'vi_VN', symbol: '₫');
-
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -580,10 +646,10 @@ class _EmployeePayrollDetailScreenState extends State<EmployeePayrollDetailScree
             const SizedBox(height: 16),
 
             // Deduction items
-            _buildDeductionItem('Bảo hiểm (BHXH + BHYT + BHTN)', _payrollRecord!.insuranceDeduction, formatter),
-            _buildDeductionItem('Thuế TNCN', _payrollRecord!.pitDeduction, formatter),
+            _buildDeductionItem('Bảo hiểm (BHXH + BHYT + BHTN)', _payrollRecord!.insuranceDeduction),
+            _buildDeductionItem('Thuế TNCN', _payrollRecord!.pitDeduction),
             if (_payrollRecord!.otherDeductions > 0)
-              _buildDeductionItem('Khác', _payrollRecord!.otherDeductions, formatter),
+              _buildDeductionItem('Khác', _payrollRecord!.otherDeductions),
 
             const Divider(height: 24),
 
@@ -591,7 +657,6 @@ class _EmployeePayrollDetailScreenState extends State<EmployeePayrollDetailScree
             _buildDeductionItem(
               'Tổng khấu trừ',
               _payrollRecord!.insuranceDeduction + _payrollRecord!.pitDeduction + _payrollRecord!.otherDeductions,
-              formatter,
               isBold: true,
               color: const Color(0xFFFF3B30),
             ),
@@ -602,7 +667,7 @@ class _EmployeePayrollDetailScreenState extends State<EmployeePayrollDetailScree
   }
 
   /// Build deduction item row
-  Widget _buildDeductionItem(String label, double amount, NumberFormat formatter, {bool isBold = false, Color? color}) {
+  Widget _buildDeductionItem(String label, double amount, {bool isBold = false, Color? color}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Row(
@@ -617,7 +682,7 @@ class _EmployeePayrollDetailScreenState extends State<EmployeePayrollDetailScree
             ),
           ),
           Text(
-            formatter.format(amount),
+            _safeCurrencyFormat(amount),
             style: TextStyle(
               fontSize: isBold ? 16 : 14,
               fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
@@ -631,8 +696,6 @@ class _EmployeePayrollDetailScreenState extends State<EmployeePayrollDetailScree
 
   /// Build net salary card (highlight)
   Widget _buildNetSalaryCard() {
-    final formatter = NumberFormat.currency(locale: 'vi_VN', symbol: '₫');
-
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -663,7 +726,7 @@ class _EmployeePayrollDetailScreenState extends State<EmployeePayrollDetailScree
           ),
           const SizedBox(height: 8),
           Text(
-            formatter.format(_payrollRecord!.netSalary),
+            _safeCurrencyFormat(_payrollRecord!.netSalary),
             style: const TextStyle(
               fontSize: 36,
               fontWeight: FontWeight.bold,

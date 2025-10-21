@@ -44,8 +44,6 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> {
   // Filters
   String? _selectedDepartment;
   String? _selectedPosition;
-  Set<String> _departments = {};
-  Set<String> _positions = {};
 
   @override
   void initState() {
@@ -157,9 +155,7 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> {
       }
       
       // Extract unique departments/positions (if backend provides)
-      // For now, using dummy filters until employee data includes these fields
-      _departments = {'IT', 'HR', 'Sales', 'Finance'}.toSet();
-      _positions = {'Nhân viên', 'Trưởng phòng', 'Giám đốc'}.toSet();
+      // For now, filters are disabled until employee data includes these fields
       
       AppLogger.success('Loaded ${_records.length} payroll records from API', tag: 'PayrollReport');
       

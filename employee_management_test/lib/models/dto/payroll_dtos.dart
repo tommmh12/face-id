@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 // ==================== PAYROLL PERIOD DTOs ====================
 
 class CreatePayrollPeriodRequest {
@@ -262,6 +264,38 @@ class GeneratePayrollResponse {
   }
 }
 
+/// 🔄 RECALCULATE PAYROLL RESPONSE (NEW - V2.1)
+class RecalculatePayrollResponse {
+  final bool success;
+  final String message;
+  final int totalEmployees;  
+  final int recalculatedCount;
+  final int failedCount;
+  final List<String> errors;
+
+  RecalculatePayrollResponse({
+    required this.success,
+    required this.message,
+    required this.totalEmployees,
+    required this.recalculatedCount,
+    required this.failedCount,
+    required this.errors,
+  });
+
+  factory RecalculatePayrollResponse.fromJson(Map<String, dynamic> json) {
+    return RecalculatePayrollResponse(
+      success: json['success'] ?? false,
+      message: json['message']?.toString() ?? '',
+      totalEmployees: json['totalEmployees'] ?? 0,
+      recalculatedCount: json['recalculatedCount'] ?? 0,
+      failedCount: json['failedCount'] ?? 0,
+      errors: json['errors'] != null 
+        ? List<String>.from(json['errors']) 
+        : [],
+    );
+  }
+}
+
 class PayrollSummaryResponse {
   final int periodId;
   final String periodName;
@@ -341,7 +375,7 @@ class PayrollRecordResponse {
       id: json['id'] ?? 0,
       payrollPeriodId: json['payrollPeriodId'] ?? 0,
       employeeId: json['employeeId'] ?? 0,
-      employeeName: json['employeeName']?.toString() ?? '',
+      employeeName: json['employeeName']?.toString() ?? 'Chưa có tên',
       totalWorkingDays: (json['totalWorkingDays'] ?? 0).toDouble(),
       totalOTHours: (json['totalOTHours'] ?? 0).toDouble(),
       totalOTPayment: (json['totalOTPayment'] ?? 0).toDouble(),
@@ -398,48 +432,121 @@ class CreateSalaryAdjustmentRequest {
   }
 }
 
+/// 🔄 UPDATED SALARY ADJUSTMENT RESPONSE (V2.1 - With Audit Fields)
 class SalaryAdjustmentResponse {
   final int id;
   final int employeeId;
-  final int periodId;
-  final String adjustmentType;
-  final String reason;
+  final String? employeeCode;
+  final String? employeeName;
+  final String adjustmentType; // "BONUS", "PENALTY", "CORRECTION"
   final double amount;
-  final DateTime adjustmentDate;
-  final String? approvedBy;
-  final String? notes;
+  final DateTime effectiveDate;
+  final String description;
+  final String createdBy;
   final DateTime createdAt;
+  final bool isProcessed; // 🔑 Kiểm soát có thể sửa hay không
+  final String? lastUpdatedBy; // Audit field
+  final DateTime? lastUpdatedAt; // Audit field
 
   SalaryAdjustmentResponse({
     required this.id,
     required this.employeeId,
-    required this.periodId,
+    this.employeeCode,
+    this.employeeName,
     required this.adjustmentType,
-    required this.reason,
     required this.amount,
-    required this.adjustmentDate,
-    this.approvedBy,
-    this.notes,
+    required this.effectiveDate,
+    required this.description,
+    required this.createdBy,
     required this.createdAt,
+    required this.isProcessed,
+    this.lastUpdatedBy,
+    this.lastUpdatedAt,
   });
 
   factory SalaryAdjustmentResponse.fromJson(Map<String, dynamic> json) {
     return SalaryAdjustmentResponse(
       id: json['id'] ?? 0,
       employeeId: json['employeeId'] ?? 0,
-      periodId: json['periodId'] ?? 0,
-      adjustmentType: json['adjustmentType']?.toString() ?? '',
-      reason: json['reason']?.toString() ?? '',
+      employeeCode: json['employeeCode']?.toString(),
+      employeeName: json['employeeName']?.toString(),
+      adjustmentType: json['adjustmentType']?.toString() ?? 'UNKNOWN',
       amount: (json['amount'] ?? 0).toDouble(),
-      adjustmentDate: json['adjustmentDate'] != null
-          ? DateTime.tryParse(json['adjustmentDate']) ?? DateTime.now()
+      effectiveDate: json['effectiveDate'] != null
+          ? DateTime.tryParse(json['effectiveDate']) ?? DateTime.now()
           : DateTime.now(),
-      approvedBy: json['approvedBy']?.toString(),
-      notes: json['notes']?.toString(),
+      description: json['description']?.toString() ?? 'Không có mô tả',
+      createdBy: json['createdBy']?.toString() ?? 'System',
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt']) ?? DateTime.now()
           : DateTime.now(),
+      isProcessed: json['isProcessed'] ?? false,
+      lastUpdatedBy: json['lastUpdatedBy']?.toString(),
+      lastUpdatedAt: json['lastUpdatedAt'] != null
+          ? DateTime.tryParse(json['lastUpdatedAt'])
+          : null,
     );
+  }
+
+  /// 🎨 Helper method để lấy màu theo loại adjustment
+  Color getTypeColor() {
+    switch (adjustmentType.toLowerCase()) {
+      case 'bonus':
+        return const Color(0xFF34C759); // Green for bonus
+      case 'penalty':
+        return const Color(0xFFFF3B30); // Red for penalty  
+      case 'correction':
+        return const Color(0xFFFF9500); // Orange for correction
+      default:
+        return const Color(0xFF007AFF); // Blue default
+    }
+  }
+
+  /// 🏷️ Helper method để lấy label tiếng Việt
+  String getTypeLabel() {
+    switch (adjustmentType.toLowerCase()) {
+      case 'bonus':
+        return 'Thưởng';
+      case 'penalty':
+        return 'Phạt';
+      case 'correction':
+        return 'Điều chỉnh';
+      default:
+        return adjustmentType;
+    }
+  }
+
+  /// 🔐 Helper method kiểm tra có thể chỉnh sửa không
+  bool get canEdit => !isProcessed;
+}
+
+/// 🆕 UPDATE SALARY ADJUSTMENT DTO (NEW - V2.1)
+class UpdateSalaryAdjustmentRequest {
+  final String adjustmentType; // "BONUS", "PENALTY", "CORRECTION"
+  final double amount;
+  final DateTime effectiveDate;
+  final String description;
+  final String updatedBy;
+  final String? updateReason; // Lý do cập nhật - quan trọng cho audit
+
+  UpdateSalaryAdjustmentRequest({
+    required this.adjustmentType,
+    required this.amount,
+    required this.effectiveDate,
+    required this.description,
+    required this.updatedBy,
+    this.updateReason,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'adjustmentType': adjustmentType,
+      'amount': amount,
+      'effectiveDate': effectiveDate.toIso8601String(),
+      'description': description,
+      'updatedBy': updatedBy,
+      'updateReason': updateReason,
+    };
   }
 }
 

@@ -5,7 +5,6 @@ import '../../models/employee.dart';
 import '../../services/payroll_api_service.dart';
 import '../../services/employee_api_service.dart';
 import '../../utils/app_logger.dart';
-import '../../config/app_theme.dart';
 import 'employee_hr_profile_screen.dart';
 
 /// 🔍 Audit Log Screen - Version 3 FINAL (Production-Ready)
@@ -185,7 +184,6 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
   String? _selectedAction;
   DateTime? _fromDate;
   DateTime? _toDate;
-  String _searchQuery = '';
   DatePreset _selectedPreset = DatePreset.last30Days; // Default 30 days
   
   // Data
@@ -512,7 +510,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
                       isDense: true,
                     ),
                     onChanged: (value) {
-                      setState(() => _searchQuery = value);
+                      // Search functionality disabled - remove search query handling
                     },
                   ),
                 ),
@@ -697,7 +695,6 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
       final range = _selectedPreset.getRange();
       _fromDate = range.start;
       _toDate = range.end;
-      _searchQuery = '';
       _currentPage = 1;
     });
     _loadAuditLogs();

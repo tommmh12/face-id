@@ -309,6 +309,9 @@ class MyApp extends StatelessWidget {
               periodId: args['periodId'],
               employeeId: args['employeeId'],
               employeeName: args['employeeName'],
+              employeeCode: args['employeeCode'],
+              department: args['department'],
+              position: args['position'],
             ),
           );
         }

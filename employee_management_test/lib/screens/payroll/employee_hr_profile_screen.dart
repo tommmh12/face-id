@@ -45,7 +45,6 @@ class _EmployeeHRProfileScreenState extends State<EmployeeHRProfileScreen> with 
   List<AllowanceResponse> _allowances = [];
   List<SalaryAdjustmentResponse> _adjustments = [];
   List<PayrollRecordResponse> _salaryHistory = [];
-  List<PayrollRuleResponse> _rulesHistory = []; // TODO: Backend needs to implement versioning
   
   bool _isLoading = true;
   String? _error;
@@ -563,18 +562,18 @@ class _EmployeeHRProfileScreenState extends State<EmployeeHRProfileScreen> with 
                     else
                       ..._adjustments.take(10).map((adj) => ListTile(
                         leading: Icon(
-                          adj.adjustmentType == 'Bonus' ? Icons.trending_up : Icons.trending_down,
-                          color: adj.amount >= 0 ? PayrollColors.success : PayrollColors.error,
+                          adj.adjustmentType.toLowerCase() == 'bonus' ? Icons.trending_up : Icons.trending_down,
+                          color: adj.getTypeColor(),
                         ),
-                        title: Text(adj.reason),
+                        title: Text(adj.description),
                         subtitle: Text(
-                          '${DateFormat('dd/MM/yyyy').format(adj.adjustmentDate)} • ${adj.adjustmentType}',
+                          '${DateFormat('dd/MM/yyyy').format(adj.effectiveDate)} • ${adj.getTypeLabel()}',
                         ),
                         trailing: Text(
                           _currencyFormat.format(adj.amount),
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: adj.amount >= 0 ? PayrollColors.success : PayrollColors.error,
+                            color: adj.getTypeColor(),
                           ),
                         ),
                       )),
