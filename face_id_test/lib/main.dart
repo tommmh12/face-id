@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'config/app_theme.dart';
 import 'screens/home_screen.dart';
 
 void main() {
@@ -13,8 +14,10 @@ class FaceRecognitionApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: const Color(0xFF4CAF50),
-      brightness: Brightness.dark,
+      seedColor: AppColors.primaryBlue,
+      brightness: Brightness.light,
+      primary: AppColors.primaryBlue,
+      secondary: AppColors.secondaryGreen,
     );
 
     return MaterialApp(
@@ -23,21 +26,29 @@ class FaceRecognitionApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: colorScheme,
-        scaffoldBackgroundColor: const Color(0xFF101214),
+        scaffoldBackgroundColor: AppColors.bgColor,
         appBarTheme: AppBarTheme(
-          backgroundColor: const Color(0xFF101214),
-          foregroundColor: colorScheme.onBackground,
+          backgroundColor: Colors.white,
+          elevation: 0,
+          foregroundColor: AppColors.textPrimary,
           centerTitle: true,
+          titleTextStyle: AppTextStyles.h5.copyWith(
+            color: AppColors.textPrimary,
+          ),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: colorScheme.primary,
-            foregroundColor: colorScheme.onPrimary,
-            textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+            backgroundColor: AppColors.primaryBlue,
+            foregroundColor: Colors.white,
+            textStyle: AppTextStyles.buttonLarge,
+            padding: const EdgeInsets.symmetric(
+              vertical: AppSpacing.lg,
+              horizontal: AppSpacing.xl,
             ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+            ),
+            elevation: 2,
           ),
         ),
       ),
