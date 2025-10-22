@@ -152,6 +152,118 @@ class PayrollRuleResponse {
   }
 }
 
+// ==================== PAYROLL RULE VERSION DTOs ====================
+
+class CreatePayrollRuleVersionRequest {
+  final int employeeId;
+  final double baseSalary;
+  final DateTime effectiveDate;
+  final String reason;
+  final int standardWorkingDays;
+  final double socialInsuranceRate;
+  final double healthInsuranceRate;
+  final double unemploymentInsuranceRate;
+  final double personalDeduction;
+  final int numberOfDependents;
+  final double dependentDeduction;
+  String? createdBy; // Will be set by controller
+
+  CreatePayrollRuleVersionRequest({
+    required this.employeeId,
+    required this.baseSalary,
+    required this.effectiveDate,
+    required this.reason,
+    this.standardWorkingDays = 22,
+    this.socialInsuranceRate = 8.0,
+    this.healthInsuranceRate = 1.5,
+    this.unemploymentInsuranceRate = 1.0,
+    this.personalDeduction = 11000000,
+    this.numberOfDependents = 0,
+    this.dependentDeduction = 4400000,
+    this.createdBy,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'employeeId': employeeId,
+      'baseSalary': baseSalary,
+      'effectiveDate': effectiveDate.toIso8601String(),
+      'reason': reason,
+      'standardWorkingDays': standardWorkingDays,
+      'socialInsuranceRate': socialInsuranceRate,
+      'healthInsuranceRate': healthInsuranceRate,
+      'unemploymentInsuranceRate': unemploymentInsuranceRate,
+      'personalDeduction': personalDeduction,
+      'numberOfDependents': numberOfDependents,
+      'dependentDeduction': dependentDeduction,
+      'createdBy': createdBy,
+    };
+  }
+}
+
+class PayrollRuleVersionResponse {
+  final int id;
+  final int employeeId;
+  final int versionNumber;
+  final double baseSalary;
+  final int standardWorkingDays;
+  final double socialInsuranceRate;
+  final double healthInsuranceRate;
+  final double unemploymentInsuranceRate;
+  final double personalDeduction;
+  final int numberOfDependents;
+  final double dependentDeduction;
+  final DateTime effectiveDate;
+  final String reason;
+  final String createdBy;
+  final DateTime createdAt;
+  final bool isActive;
+
+  PayrollRuleVersionResponse({
+    required this.id,
+    required this.employeeId,
+    required this.versionNumber,
+    required this.baseSalary,
+    required this.standardWorkingDays,
+    required this.socialInsuranceRate,
+    required this.healthInsuranceRate,
+    required this.unemploymentInsuranceRate,
+    required this.personalDeduction,
+    required this.numberOfDependents,
+    required this.dependentDeduction,
+    required this.effectiveDate,
+    required this.reason,
+    required this.createdBy,
+    required this.createdAt,
+    required this.isActive,
+  });
+
+  factory PayrollRuleVersionResponse.fromJson(Map<String, dynamic> json) {
+    return PayrollRuleVersionResponse(
+      id: json['id'] ?? 0,
+      employeeId: json['employeeId'] ?? 0,
+      versionNumber: json['versionNumber'] ?? 1,
+      baseSalary: (json['baseSalary'] ?? 0).toDouble(),
+      standardWorkingDays: json['standardWorkingDays'] ?? 22,
+      socialInsuranceRate: (json['socialInsuranceRate'] ?? 0).toDouble(),
+      healthInsuranceRate: (json['healthInsuranceRate'] ?? 0).toDouble(),
+      unemploymentInsuranceRate: (json['unemploymentInsuranceRate'] ?? 0).toDouble(),
+      personalDeduction: (json['personalDeduction'] ?? 0).toDouble(),
+      numberOfDependents: json['numberOfDependents'] ?? 0,
+      dependentDeduction: (json['dependentDeduction'] ?? 0).toDouble(),
+      effectiveDate: json['effectiveDate'] != null
+          ? DateTime.tryParse(json['effectiveDate']) ?? DateTime.now()
+          : DateTime.now(),
+      reason: json['reason']?.toString() ?? 'Không có lý do',
+      createdBy: json['createdBy']?.toString() ?? 'System',
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt']) ?? DateTime.now()
+          : DateTime.now(),
+      isActive: json['isActive'] ?? true,
+    );
+  }
+}
+
 // ==================== ALLOWANCE DTOs ====================
 
 class CreateAllowanceRequest {
@@ -399,35 +511,29 @@ class PayrollRecordResponse {
 
 class CreateSalaryAdjustmentRequest {
   final int employeeId;
-  final int periodId;
-  final String adjustmentType; // "Bonus", "Penalty", "Allowance", "Deduction"
-  final String reason;
+  final String adjustmentType; // "BONUS", "PENALTY", "CORRECTION"
   final double amount;
-  final DateTime adjustmentDate;
-  final String? approvedBy;
-  final String? notes;
+  final DateTime effectiveDate;
+  final String description;
+  final String createdBy;
 
   CreateSalaryAdjustmentRequest({
     required this.employeeId,
-    required this.periodId,
     required this.adjustmentType,
-    required this.reason,
     required this.amount,
-    required this.adjustmentDate,
-    this.approvedBy,
-    this.notes,
+    required this.effectiveDate,
+    required this.description,
+    required this.createdBy,
   });
 
   Map<String, dynamic> toJson() {
     return {
       'employeeId': employeeId,
-      'periodId': periodId,
       'adjustmentType': adjustmentType,
-      'reason': reason,
       'amount': amount,
-      'adjustmentDate': adjustmentDate.toIso8601String(),
-      'approvedBy': approvedBy,
-      'notes': notes,
+      'effectiveDate': effectiveDate.toIso8601String(),
+      'description': description,
+      'createdBy': createdBy,
     };
   }
 }

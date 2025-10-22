@@ -739,16 +739,13 @@ class _EmployeeHRProfileScreenState extends State<EmployeeHRProfileScreen> with 
                 return;
               }
 
-              final currentPeriod = periodsResponse.data!.first;
-
               final request = CreateSalaryAdjustmentRequest(
                 employeeId: widget.employeeId,
-                periodId: currentPeriod.id,
                 adjustmentType: type,
-                reason: reasonController.text,
                 amount: type == 'Penalty' ? -amount : amount,
-                adjustmentDate: DateTime.now(),
-                approvedBy: 'HR', // TODO: Get from auth
+                effectiveDate: DateTime.now(),
+                description: reasonController.text,
+                createdBy: 'HR Admin', // TODO: Get from auth service
               );
 
               final response = await _payrollService.createSalaryAdjustment(request);

@@ -1,7 +1,13 @@
+import 'dart:convert';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../utils/app_logger.dart';
+import '../../services/payroll_api_service.dart';
+import '../../services/api_service.dart';
+import '../../models/dto/payroll_dtos.dart';
 
 /// Màn hình phân tích và biểu đồ lương
 /// 
@@ -22,26 +28,35 @@ class PayrollChartScreen extends StatefulWidget {
 
 class _PayrollChartScreenState extends State<PayrollChartScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final PayrollApiService _payrollService = PayrollApiService();
   
   // Filter states
   String _selectedTimeRange = '12months'; // 6months, 12months, alltime
   String? _selectedDepartment;
   String? _selectedPosition;
   
-  // Dummy data
+  // Data states
+  bool _isLoadingData = false;
   final List<String> _departments = ['IT', 'HR', 'Sales', 'Marketing', 'Finance'];
   final List<String> _positions = ['Manager', 'Developer', 'Designer', 'Analyst', 'Intern'];
   
-  // Chart data (dummy)
+  // Chart data (from API)
   final List<MonthlyPayrollData> _monthlyData = [];
   final Map<String, double> _departmentData = {};
+  List<PayrollPeriodResponse> _periods = [];
+  
+  // AI Analysis states
+  bool _isAnalyzing = false;
+  String? _analysisResult;
+  String? _analysisError;
+  bool _isAnalysisExpanded = false; // Track expand/collapse state
   
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     AppLogger.info('Screen initialized', tag: 'PayrollChart');
-    _generateDummyData();
+    _loadDataAndAnalyze();
   }
 
   @override
@@ -51,8 +66,85 @@ class _PayrollChartScreenState extends State<PayrollChartScreen> with SingleTick
     super.dispose();
   }
 
-  /// Generate dummy data for charts
-  void _generateDummyData() {
+  /// Load data from API
+  Future<void> _loadChartData() async {
+    setState(() => _isLoadingData = true);
+    
+    try {
+      // 1. Load all payroll periods
+      final periodsResponse = await _payrollService.getPayrollPeriods();
+      
+      if (periodsResponse.success && periodsResponse.data != null) {
+        _periods = periodsResponse.data!;
+        AppLogger.info('Loaded ${_periods.length} payroll periods', tag: 'PayrollChart');
+        
+        // 2. Generate monthly data from periods
+        _monthlyData.clear();
+        _departmentData.clear();
+        
+        // Take up to 12 most recent periods
+        final recentPeriods = _periods.take(12).toList();
+        
+        for (final period in recentPeriods) {
+          try {
+            // Get summary for each period
+            final summaryResponse = await _payrollService.getPayrollSummary(period.id);
+            
+            if (summaryResponse.success && summaryResponse.data != null) {
+              final summary = summaryResponse.data!;
+              
+              // Add to monthly data
+              _monthlyData.add(MonthlyPayrollData(
+                month: period.startDate,
+                totalCost: summary.totalNetSalary, // Use actual total cost
+                employeeCount: summary.totalEmployees,
+              ));
+              
+              // Get department breakdown from records
+              final recordsResponse = await _payrollService.getPayrollRecords(period.id);
+              if (recordsResponse.success && recordsResponse.data != null) {
+                final records = recordsResponse.data!.records;
+                
+                // Aggregate by department (if we have department info)
+                for (final record in records) {
+                  final dept = record.employeeName.split(' ').first; // Simple dept extraction
+                  _departmentData[dept] = (_departmentData[dept] ?? 0) + record.netSalary;
+                }
+              }
+            }
+          } catch (e) {
+            AppLogger.warning('Failed to load data for period ${period.id}: $e', tag: 'PayrollChart');
+            // Continue with next period
+          }
+        }
+        
+        // If no data from API, use fallback dummy data
+        if (_monthlyData.isEmpty) {
+          _generateFallbackData();
+        }
+        
+        AppLogger.success('Loaded chart data: ${_monthlyData.length} months, ${_departmentData.length} departments', tag: 'PayrollChart');
+        
+      } else {
+        // Fallback to dummy data if API fails
+        AppLogger.warning('Failed to load periods, using fallback data', tag: 'PayrollChart');
+        _generateFallbackData();
+      }
+      
+    } catch (e) {
+      AppLogger.error('Error loading chart data', error: e, tag: 'PayrollChart');
+      // Use fallback data on error
+      _generateFallbackData();
+    } finally {
+      setState(() => _isLoadingData = false);
+    }
+  }
+
+  /// Generate fallback dummy data if API fails
+  void _generateFallbackData() {
+    _monthlyData.clear();
+    _departmentData.clear();
+    
     // Monthly data (12 months)
     final now = DateTime.now();
     for (int i = 11; i >= 0; i--) {
@@ -71,7 +163,139 @@ class _PayrollChartScreenState extends State<PayrollChartScreen> with SingleTick
     _departmentData['Marketing'] = 35000000;
     _departmentData['Finance'] = 50000000;
 
-    AppLogger.info('Generated dummy data: ${_monthlyData.length} months, ${_departmentData.length} departments', tag: 'PayrollChart');
+    AppLogger.info('Generated fallback data: ${_monthlyData.length} months, ${_departmentData.length} departments', tag: 'PayrollChart');
+  }
+
+  /// Prepare monthly data for JSON
+  String prepareMonthlyDataJson(List<MonthlyPayrollData> data) {
+    final List<Map<String, dynamic>> jsonData = data.map((item) => {
+      'month': DateFormat('yyyy-MM').format(item.month),
+      'monthName': DateFormat('MM/yyyy').format(item.month),
+      'totalCost': item.totalCost,
+      'employeeCount': item.employeeCount,
+      'averageSalaryPerEmployee': item.totalCost / item.employeeCount,
+    }).toList();
+    
+    return jsonEncode(jsonData);
+  }
+
+  /// Prepare department data for JSON
+  String prepareDepartmentDataJson(Map<String, double> data) {
+    final total = data.values.fold<double>(0, (sum, value) => sum + value);
+    
+    final List<Map<String, dynamic>> jsonData = data.entries.map((entry) => {
+      'department': entry.key,
+      'totalCost': entry.value,
+      'percentage': ((entry.value / total) * 100).toStringAsFixed(1),
+    }).toList();
+    
+    return jsonEncode(jsonData);
+  }
+
+  /// Call Gemini AI for analysis
+  Future<String> _callGeminiAnalysis(String prompt) async {
+    // 1. Lấy API Key từ dotenv, kiểm tra null và ném lỗi nếu thiếu
+    final apiKey = dotenv.env['GEMINI_API_KEY'];
+    if (apiKey == null || apiKey.isEmpty) {
+      throw Exception('GEMINI_API_KEY not found in .env file. Please add your Gemini API key.');
+    }
+
+    // 2. Khởi tạo GenerativeModel
+    final model = GenerativeModel(
+      model: 'gemini-2.5-flash',
+      apiKey: apiKey,
+    );
+
+    // 3. Tạo content
+    final content = [Content.text(prompt)];
+
+    try {
+      // 4. Gọi API và log success
+      final response = await model.generateContent(content);
+      AppLogger.success('Gemini AI analysis completed successfully', tag: 'PayrollChart');
+      
+      // 5. Kiểm tra response text
+      if (response.text != null && response.text!.isNotEmpty) {
+        return response.text!;
+      } else {
+        return 'AI không thể tạo phân tích cho dữ liệu này. Vui lòng thử lại sau.';
+      }
+    } catch (e) {
+      // 6. Log lỗi chi tiết và ném exception mới
+      AppLogger.error('Failed to call Gemini AI analysis', error: e, tag: 'PayrollChart');
+      throw Exception('Lỗi khi gọi AI phân tích: ${e.toString()}');
+    }
+  }
+
+  /// Load data and analyze with AI
+  Future<void> _loadDataAndAnalyze() async {
+    // 1. Set loading states
+    setState(() {
+      _isAnalyzing = true;
+      _analysisResult = null;
+      _analysisError = null;
+    });
+
+    try {
+      // 2. Load chart data from API
+      await _loadChartData();
+
+      // 3. Check if data exists
+      if (_monthlyData.isNotEmpty && _departmentData.isNotEmpty) {
+        // 4. Prepare JSON data
+        final monthlyJson = prepareMonthlyDataJson(_monthlyData);
+        final departmentJson = prepareDepartmentDataJson(_departmentData);
+
+        // 5. Build detailed prompt
+        final prompt = '''
+Bạn là một chuyên gia phân tích tài chính và nhân sự. Tôi cung cấp cho bạn dữ liệu lương của công ty trong 12 tháng gần nhất và phân bổ theo phòng ban.
+
+**DỮ LIỆU LƯƠNG THEO THÁNG:**
+$monthlyJson
+
+**DỮ LIỆU PHÂN BỔ THEO PHÒNG BAN:**
+$departmentJson
+
+**YÊU CẦU PHÂN TÍCH:**
+1. **Xu hướng chi phí lương:** Phân tích xu hướng tăng/giảm qua các tháng, tính toán tốc độ tăng trưởng
+2. **Phân tích theo phòng ban:** So sánh chi phí lương giữa các phòng ban, đánh giá tỷ lệ phân bổ
+3. **Hiệu quả nhân sự:** Đánh giá mức lương trung bình mỗi nhân viên qua thời gian
+4. **Dự báo & đề xuất:** Đưa ra dự báo cho tháng tiếp theo và đề xuất tối ưu hóa chi phí
+
+**ĐỊNH DẠNG KẾT QUẢ:**
+- Sử dụng emoji và bullet points để dễ đọc
+- Đưa ra số liệu cụ thể và phần trăm
+- Kết luận ngắn gọn với 2-3 đề xuất hành động
+
+Hãy phân tích chi tiết và chuyên nghiệp.
+''';
+
+        // 6. Call Gemini AI
+        final result = await _callGeminiAnalysis(prompt);
+        
+        // 7. Update result
+        setState(() {
+          _analysisResult = result;
+        });
+        
+      } else {
+        // No data case
+        setState(() {
+          _analysisError = "Không đủ dữ liệu để phân tích.";
+        });
+      }
+    } catch (e) {
+      // Error handling
+      AppLogger.error('Error in _loadDataAndAnalyze', error: e, tag: 'PayrollChart');
+      setState(() {
+        _analysisError = 'Lỗi khi tải/phân tích: ${e.toString()}';
+      });
+    } finally {
+      // Always set analyzing to false
+      setState(() {
+        _isAnalyzing = false;
+      });
+    }
   }
 
   /// Apply filters
@@ -112,23 +336,29 @@ class _PayrollChartScreenState extends State<PayrollChartScreen> with SingleTick
           ],
         ),
       ),
-      body: Column(
-        children: [
-          // Filters
-          _buildFiltersSection(),
-          
-          // Charts
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildBarChartTab(),
-                _buildLineChartTab(),
-                _buildPieChartTab(),
-              ],
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Filters
+            _buildFiltersSection(),
+            
+            // AI Analysis
+            _buildAnalysisSection(),
+            
+            // Charts - give them fixed height to work in ScrollView
+            SizedBox(
+              height: 600, // Fixed height for charts
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildBarChartTab(),
+                  _buildLineChartTab(),
+                  _buildPieChartTab(),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -292,7 +522,21 @@ class _PayrollChartScreenState extends State<PayrollChartScreen> with SingleTick
 
   /// Build Bar Chart tab
   Widget _buildBarChartTab() {
-    return SingleChildScrollView(
+    // Show loading if data is being loaded
+    if (_isLoadingData || _monthlyData.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Đang tải dữ liệu biểu đồ...'),
+          ],
+        ),
+      );
+    }
+
+    return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -441,7 +685,21 @@ class _PayrollChartScreenState extends State<PayrollChartScreen> with SingleTick
 
   /// Build Line Chart tab
   Widget _buildLineChartTab() {
-    return SingleChildScrollView(
+    // Show loading if data is being loaded
+    if (_isLoadingData || _monthlyData.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Đang tải dữ liệu biểu đồ...'),
+          ],
+        ),
+      );
+    }
+
+    return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -583,7 +841,21 @@ class _PayrollChartScreenState extends State<PayrollChartScreen> with SingleTick
 
   /// Build Pie Chart tab
   Widget _buildPieChartTab() {
-    return SingleChildScrollView(
+    // Show loading if data is being loaded
+    if (_isLoadingData || _monthlyData.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Đang tải dữ liệu biểu đồ...'),
+          ],
+        ),
+      );
+    }
+
+    return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -814,6 +1086,210 @@ class _PayrollChartScreenState extends State<PayrollChartScreen> with SingleTick
         ),
       ),
     );
+  }
+
+  /// Build AI analysis section
+  Widget _buildAnalysisSection() {
+    // 1. If analyzing
+    if (_isAnalyzing) {
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(width: 16),
+            Text(
+              'AI đang phân tích dữ liệu...',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // 2. If error
+    if (_analysisError != null) {
+      return Container(
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.red[50],
+          border: Border.all(color: Colors.red[300]!),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.error_outline, color: Colors.red[600]),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                _analysisError!,
+                style: TextStyle(
+                  color: Colors.red[700],
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // 3. If has result
+    if (_analysisResult != null) {
+      return Card(
+        margin: const EdgeInsets.all(16),
+        elevation: 4,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min, // Prevent expansion
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.auto_awesome,
+                    color: Colors.purple[600],
+                    size: 24,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Kết quả phân tích AI',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.purple[600],
+                      ),
+                    ),
+                  ),
+                  // Add collapse/expand button
+                  IconButton(
+                    icon: Icon(_isAnalysisExpanded ? Icons.expand_less : Icons.expand_more),
+                    onPressed: () {
+                      setState(() {
+                        _isAnalysisExpanded = !_isAnalysisExpanded;
+                      });
+                    },
+                    tooltip: _isAnalysisExpanded ? 'Thu gọn' : 'Mở rộng',
+                  ),
+                ],
+              ),
+              const Divider(height: 24),
+              // Show analysis content based on expand state
+              if (_isAnalysisExpanded)
+                // Expanded view - no internal scroll since we have main scroll
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey[300]!),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Info header
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.blue[50],
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(8),
+                            topRight: Radius.circular(8),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.auto_awesome, size: 16, color: Colors.blue[600]),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Phân tích chi tiết từ AI',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.blue[600],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Content without scroll - will scroll with main page
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: SelectableText(
+                          _analysisResult!,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            height: 1.7,
+                            color: Colors.black87,
+                          ),
+                          textAlign: TextAlign.justify,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                // Collapsed view - show preview
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey[300]!),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _analysisResult!.length > 200 
+                          ? '${_analysisResult!.substring(0, 200)}...'
+                          : _analysisResult!,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          height: 1.6,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      if (_analysisResult!.length > 200)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            'Nhấn mở rộng để xem toàn bộ phân tích...',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.blue[600],
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 16),
+              Text(
+                'Lưu ý: Kết quả chỉ mang tính tham khảo.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // 4. Default case
+    return const SizedBox.shrink();
   }
 }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/dto/payroll_dtos.dart';
 import '../../services/payroll_api_service.dart';
+import '../../services/api_service.dart';
 import '../../utils/app_logger.dart';
 
 /// Màn hình chi tiết bảng lương của 1 nhân viên
@@ -49,6 +50,7 @@ class EmployeePayrollDetailScreen extends StatefulWidget {
 
 class _EmployeePayrollDetailScreenState extends State<EmployeePayrollDetailScreen> {
   PayrollRecordResponse? _payrollRecord;
+  PayrollRuleResponse? _payrollRule; // Thông tin lương cơ bản từ contract
   bool _isLoading = false;
   bool _isExporting = false;
   bool _isSendingEmail = false;
@@ -91,29 +93,44 @@ class _EmployeePayrollDetailScreenState extends State<EmployeePayrollDetailScree
     AppLogger.info('Loading payroll detail for employee ${widget.employeeId}, period ${widget.periodId}', tag: 'EmployeePayrollDetail');
 
     try {
-      // Gọi API thực tế để lấy chi tiết bảng lương
       final payrollService = PayrollApiService();
-      final response = await payrollService.getEmployeePayroll(widget.periodId, widget.employeeId);
       
-      if (response.success && response.data != null) {
+      // Load đồng thời cả payroll record (lương theo kỳ) và payroll rule (lương cơ bản)
+      final results = await Future.wait([
+        payrollService.getEmployeePayroll(widget.periodId, widget.employeeId),
+        payrollService.getPayrollRuleByEmployeeId(widget.employeeId),
+      ]);
+      
+      final payrollResponse = results[0] as ApiResponse<PayrollRecordResponse>;
+      final ruleResponse = results[1] as ApiResponse<PayrollRuleResponse>;
+      
+      if (payrollResponse.success && payrollResponse.data != null) {
         setState(() {
-          _payrollRecord = response.data!;
+          _payrollRecord = payrollResponse.data!;
+          _payrollRule = ruleResponse.success ? ruleResponse.data : null;
           _errorMessage = null;
         });
-        AppLogger.success('Loaded payroll detail: ${response.data!.employeeName} - Net: ${_safeCurrencyFormat(response.data!.netSalary)}', tag: 'EmployeePayrollDetail');
+        AppLogger.success('Loaded payroll detail: ${payrollResponse.data!.employeeName} - Net: ${_safeCurrencyFormat(payrollResponse.data!.netSalary)}', tag: 'EmployeePayrollDetail');
+        if (_payrollRule != null) {
+          AppLogger.info('Loaded payroll rule: Base salary ${_safeCurrencyFormat(_payrollRule!.baseSalary)}', tag: 'EmployeePayrollDetail');
+        } else {
+          AppLogger.warning('No payroll rule found for employee ${widget.employeeId}', tag: 'EmployeePayrollDetail');
+        }
       } else {
         // Không có dữ liệu lương (chưa tính lương cho kỳ này)
         setState(() {
           _payrollRecord = null;
-          _errorMessage = response.message ?? 'Nhân viên này chưa có dữ liệu lương cho kỳ hiện tại.\n\nCó thể nhân viên chưa được tính lương hoặc chưa có trong kỳ lương này.';
+          _payrollRule = ruleResponse.success ? ruleResponse.data : null;
+          _errorMessage = payrollResponse.message ?? 'Nhân viên này chưa có dữ liệu lương cho kỳ hiện tại.\n\nCó thể nhân viên chưa được tính lương hoặc chưa có trong kỳ lương này.';
         });
         
-        AppLogger.warning('No payroll data found: ${response.message}', tag: 'EmployeePayrollDetail');
+        AppLogger.warning('No payroll data found: ${payrollResponse.message}', tag: 'EmployeePayrollDetail');
       }
     } catch (e) {
       AppLogger.error('Exception loading payroll detail', error: e, tag: 'EmployeePayrollDetail');
       setState(() {
         _payrollRecord = null;
+        _payrollRule = null;
         _errorMessage = 'Lỗi kết nối đến server:\n${e.toString()}\n\nVui lòng kiểm tra kết nối mạng và thử lại.';
       });
     } finally {
@@ -262,6 +279,14 @@ class _EmployeePayrollDetailScreenState extends State<EmployeePayrollDetailScree
                     _buildEmployeeInfoCard(),
                     
                     const SizedBox(height: 16),
+
+                    // Base salary info (from payroll rule)
+                    if (_payrollRule != null) _buildBaseSalaryCard(),
+                    if (_payrollRule != null) const SizedBox(height: 16),
+                    
+                    // Show message if no payroll rule
+                    if (_payrollRule == null) _buildNoPayrollRuleCard(),
+                    if (_payrollRule == null) const SizedBox(height: 16),
 
                     // Working days info
                     _buildWorkingDaysCard(),
@@ -457,6 +482,162 @@ class _EmployeePayrollDetailScreenState extends State<EmployeePayrollDetailScree
     );
   }
 
+  /// Build base salary card (từ payroll rule - lương cơ bản hợp đồng)
+  Widget _buildBaseSalaryCard() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Section header
+            Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0A84FF),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  '📋 LƯƠNG CƠ BẢN (HỢP ĐỒNG)',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // Base salary
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Lương cơ bản:',
+                  style: TextStyle(fontSize: 14),
+                ),
+                Text(
+                  _safeCurrencyFormat(_payrollRule!.baseSalary),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0A84FF),
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 12),
+
+            // Working days
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Ngày công chuẩn:',
+                  style: TextStyle(fontSize: 14),
+                ),
+                Text(
+                  '${_payrollRule!.standardWorkingDays} ngày/tháng',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
+            // Insurance rates
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Tỷ lệ BHXH:',
+                  style: TextStyle(fontSize: 14),
+                ),
+                Text(
+                  '${_payrollRule!.socialInsuranceRate}%',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
+            // Created date
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Ngày thiết lập:',
+                  style: TextStyle(fontSize: 14),
+                ),
+                Text(
+                  '${_payrollRule!.createdAt.day}/${_payrollRule!.createdAt.month}/${_payrollRule!.createdAt.year}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Build no payroll rule card (thông báo chưa có quy tắc lương)
+  Widget _buildNoPayrollRuleCard() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Icon(
+              Icons.info_outline,
+              size: 48,
+              color: Colors.orange[400],
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Chưa có quy tắc lương',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Nhân viên này chưa được thiết lập quy tắc lương cơ bản.\nVui lòng liên hệ HR để thiết lập.',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+                height: 1.4,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   /// Build working days card
   Widget _buildWorkingDaysCard() {
     return Card(
@@ -548,7 +729,7 @@ class _EmployeePayrollDetailScreenState extends State<EmployeePayrollDetailScree
                 ),
                 const SizedBox(width: 8),
                 const Text(
-                  '💰 KHOẢN THU NHẬP',
+                  '💰 LƯƠNG THEO KỲ (ĐÃ TÍNH TOÁN)',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,

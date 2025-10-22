@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/auth/splash_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/dashboard/admin_dashboard.dart';
@@ -22,12 +23,16 @@ import 'screens/payroll/allowance_management_screen.dart';
 import 'screens/payroll/employee_payroll_detail_screen.dart';
 import 'screens/payroll/employee_salary_detail_screen_v2.dart';
 import 'screens/payroll/payroll_chart_screen.dart';
+import 'screens/payroll/edit_base_salary_screen.dart';
 import 'screens/api_test_screen.dart';
 import 'services/loading_service.dart';
 import 'utils/camera_helper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Load environment variables
+  await dotenv.load(fileName: ".env");
 
   // Initialize locale data for date formatting
   await initializeDateFormatting('vi_VN', null);
@@ -321,6 +326,15 @@ class MyApp extends StatelessWidget {
             builder: (context) => EmployeeSalaryDetailScreenV2(
               periodId: args['periodId'],
               employeeId: args['employeeId'],
+            ),
+          );
+        }
+        if (settings.name == '/payroll/edit-base-salary') {
+          final args = settings.arguments as Map<String, dynamic>;
+          return MaterialPageRoute(
+            builder: (context) => EditBaseSalaryScreen(
+              employee: args['employee'],
+              currentRule: args['currentRule'],
             ),
           );
         }

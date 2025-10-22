@@ -1385,12 +1385,11 @@ class _EmployeeSalaryDetailScreenV2State extends State<EmployeeSalaryDetailScree
 
               final request = CreateSalaryAdjustmentRequest(
                 employeeId: widget.employeeId,
-                periodId: widget.periodId,
                 adjustmentType: type,
-                reason: reasonController.text,
                 amount: type.toUpperCase() == 'PENALTY' ? -amount : amount,
-                adjustmentDate: DateTime.now(),
-                approvedBy: 'HR', // TODO: Get from auth
+                effectiveDate: DateTime.now(),
+                description: reasonController.text,
+                createdBy: 'HR Admin', // TODO: Get from auth service
               );
 
               final response = await _payrollService.createSalaryAdjustment(request);

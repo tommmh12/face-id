@@ -1,6 +1,7 @@
 import 'dart:convert';
 import '../models/dto/payroll_dtos.dart';
 import '../utils/app_logger.dart';
+import '../utils/debug_helper.dart';
 import '../utils/http_client.dart';
 import 'api_service.dart';
 
@@ -130,6 +131,44 @@ class PayrollApiService extends BaseApiService {
     );
     
     return response;
+  }
+
+  /// POST /api/payroll/rules/version
+  /// Tạo version mới cho quy tắc lương (Versioning - NOT update existing)
+  Future<ApiResponse<PayrollRuleVersionResponse>> createPayrollRuleVersion(CreatePayrollRuleVersionRequest request) async {
+    // 🔍 DEBUG: Log request body trước khi gửi
+    final requestBodyMap = request.toJson();
+    DebugHelper.logApiRequest('/api/payroll/rules/version', requestBodyMap);
+    
+    AppLogger.apiRequest('$_endpoint/rules/version', method: 'POST', data: {
+      'employeeId': request.employeeId,
+      'baseSalary': request.baseSalary,
+      'effectiveDate': request.effectiveDate.toIso8601String(),
+      'reason': request.reason,
+    });
+    
+    try {
+      final response = await handleRequest(
+        () async => CustomHttpClient.post(
+          Uri.parse('${ApiConfig.baseUrl}$_endpoint/rules/version'),
+          headers: await ApiConfig.getAuthenticatedHeaders(),
+          body: json.encode(request.toJson()),
+        ),
+        (json) => PayrollRuleVersionResponse.fromJson(json),
+      );
+      
+      // 🔍 DEBUG: Log response
+      if (response.success) {
+        DebugHelper.logSuccess('CreatePayrollRuleVersion thành công - Version: ${response.data?.versionNumber}', tag: 'PAYROLL');
+      } else {
+        DebugHelper.logError('CreatePayrollRuleVersion thất bại: ${response.message}', tag: 'PAYROLL');
+      }
+      
+      return response;
+    } catch (e) {
+      DebugHelper.logError('Exception trong createPayrollRuleVersion', tag: 'PAYROLL', error: e);
+      rethrow;
+    }
   }
 
   /// GET /api/payroll/rules
@@ -340,32 +379,43 @@ class PayrollApiService extends BaseApiService {
   }
 
   /// POST /api/payroll/adjustments
-  /// Tạo điều chỉnh lương (thưởng, phạt, phụ cấp đột xuất)
+  /// Tạo điều chỉnh lương (thưởng, phạt, phụ cấp đót xuất)
   Future<ApiResponse<SalaryAdjustmentResponse>> createSalaryAdjustment(CreateSalaryAdjustmentRequest request) async {
+    // 🔍 DEBUG: Log request body trước khi gửi
+    final requestBodyMap = request.toJson();
+    DebugHelper.logApiRequest('/api/payroll/adjustments', requestBodyMap);
+    
     AppLogger.apiRequest('$_endpoint/adjustments', method: 'POST', data: {
       'employeeId': request.employeeId,
-      'periodId': request.periodId,
       'adjustmentType': request.adjustmentType,
       'amount': request.amount,
+      'effectiveDate': request.effectiveDate.toIso8601String(),
+      'description': request.description,
+      'createdBy': request.createdBy,
     });
     
-    final response = await handleRequest(
-      () async => CustomHttpClient.post(
-        Uri.parse('${ApiConfig.baseUrl}$_endpoint/adjustments'),
-        headers: await ApiConfig.getAuthenticatedHeaders(), //  FIXED: Use auth headers
-        body: json.encode(request.toJson()),
-      ),
-      (json) => SalaryAdjustmentResponse.fromJson(json),
-    );
-    
-    AppLogger.apiResponse(
-      '$_endpoint/adjustments',
-      success: response.success,
-      message: response.message,
-      data: response.data != null ? 'Type: ${response.data!.adjustmentType}, Amount: ${response.data!.amount}' : null,
-    );
-    
-    return response;
+    try {
+      final response = await handleRequest(
+        () async => CustomHttpClient.post(
+          Uri.parse('${ApiConfig.baseUrl}$_endpoint/adjustments'),
+          headers: await ApiConfig.getAuthenticatedHeaders(), //  FIXED: Use auth headers
+          body: json.encode(request.toJson()),
+        ),
+        (json) => SalaryAdjustmentResponse.fromJson(json),
+      );
+      
+      // 🔍 DEBUG: Log response
+      if (response.success) {
+        DebugHelper.logSuccess('CreateSalaryAdjustment thành công - ${response.data?.adjustmentType}: ${response.data?.amount}', tag: 'PAYROLL');
+      } else {
+        DebugHelper.logError('CreateSalaryAdjustment thất bại: ${response.message}', tag: 'PAYROLL');
+      }
+      
+      return response;
+    } catch (e) {
+      DebugHelper.logError('Exception trong createSalaryAdjustment', tag: 'PAYROLL', error: e);
+      rethrow;
+    }
   }
 
   /// GET /api/payroll/adjustments/employee/{employeeId}

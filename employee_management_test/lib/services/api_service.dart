@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
+import '../utils/debug_helper.dart';
 import 'secure_storage_service.dart';
 
 class ApiConfig {
@@ -143,26 +144,42 @@ class BaseApiService {
     try {
       final response = await requestFunction();
       
+      // 🔍 DEBUG: Log response details
+      DebugHelper.logApiResponse('Response', response.statusCode, response.body);
+      
       // Sử dụng _parseResponse với guard clauses - chỉ parse, không ném exception cho status code
       final Map<String, dynamic> jsonData = _parseResponse(response);
 
       // KIỂM TRA MÃ TRẠNG THÁI HTTP (Không dựa vào success field nữa)
       if (response.statusCode >= 200 && response.statusCode < 300) {
         // Success response (2xx)
+        DebugHelper.logSuccess('Request thành công - Status ${response.statusCode}', tag: 'HTTP');
         return ApiResponse.success(fromJson(jsonData), response.statusCode);
       } else {
         // Error response (4xx, 5xx) - Lấy thông báo lỗi từ JSON body
+        DebugHelper.logError('Request thất bại - Status ${response.statusCode}', tag: 'HTTP');
+        
+        // Kiểm tra validation errors từ .NET Core
+        if (jsonData['errors'] != null) {
+          final errors = jsonData['errors'] as Map<String, dynamic>;
+          DebugHelper.logValidationErrors(errors);
+        }
+        
         final errorMessage = jsonData['message'] ?? 
+                           jsonData['title'] ?? 
                            jsonData['error'] ?? 
                            'Lỗi không xác định (HTTP ${response.statusCode})';
         return ApiResponse.error(errorMessage, response.statusCode);
       }
     } on ApiException catch (e) {
       // Bắt lỗi khi Body trống hoặc Malformed JSON (chỉ từ _parseResponse)
+      DebugHelper.logError('ApiException: ${e.message}', tag: 'HTTP', error: e);
       return ApiResponse.error(e.message, e.statusCode);
     } on FormatException catch (e) {
+      DebugHelper.logError('FormatException: ${e.message}', tag: 'HTTP', error: e);
       return ApiResponse.error('Lỗi định dạng JSON: ${e.message}');
     } catch (e) {
+      DebugHelper.logError('Unexpected Exception: ${e.toString()}', tag: 'HTTP', error: e);
       return ApiResponse.error('Lỗi kết nối: ${e.toString()}');
     }
   }

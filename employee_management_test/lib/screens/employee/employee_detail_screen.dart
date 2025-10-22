@@ -1075,32 +1075,50 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                 ],
               ),
               const SizedBox(height: 8),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    // Navigate to full salary detail screen
-                    Navigator.pushNamed(
-                      context,
-                      '/payroll/employee-detail',
-                      arguments: {
-                        'periodId': 1, // TODO: Get current period ID
-                        'employeeId': widget.employeeId,
-                        'employeeName': _employee?.fullName ?? 'Chưa có tên',
-                        'employeeCode': _employee?.employeeCode,
-                        'department': 'ID: ${_employee?.departmentId ?? ''}',
-                        'position': _employee?.position,
-                      },
-                    );
-                  },
-                  icon: const Icon(Icons.visibility_rounded, size: 16),
-                  label: const Text('Xem chi tiết', style: TextStyle(fontSize: 12)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryBlue,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _showEditBaseSalaryDialog(),
+                      icon: const Icon(Icons.edit_rounded, color: Colors.blue, size: 16),
+                      label: const Text(
+                        'Sửa lương',
+                        style: TextStyle(color: Colors.blue, fontSize: 12),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.blue),
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        // Navigate to full salary detail screen
+                        Navigator.pushNamed(
+                          context,
+                          '/payroll/employee-detail',
+                          arguments: {
+                            'periodId': 1, // TODO: Get current period ID
+                            'employeeId': widget.employeeId,
+                            'employeeName': _employee?.fullName ?? 'Chưa có tên',
+                            'employeeCode': _employee?.employeeCode,
+                            'department': 'ID: ${_employee?.departmentId ?? ''}',
+                            'position': _employee?.position,
+                          },
+                        );
+                      },
+                      icon: const Icon(Icons.visibility_rounded, size: 16),
+                      label: const Text('Chi tiết', style: TextStyle(fontSize: 12)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryBlue,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           );
@@ -1134,6 +1152,21 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                 ),
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: Colors.red),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => _showEditBaseSalaryDialog(),
+                icon: const Icon(Icons.edit_rounded, color: Colors.blue),
+                label: const Text(
+                  'Sửa lương',
+                  style: TextStyle(color: Colors.blue),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.blue),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
@@ -1406,6 +1439,59 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
     }
   }
 
+  /// 💰 Show Edit Base Salary Dialog
+  void _showEditBaseSalaryDialog() async {
+    if (_employee == null) return;
+
+    final result = await Navigator.pushNamed(
+      context,
+      '/payroll/edit-base-salary',
+      arguments: {
+        'employee': _employee!,
+        'currentRule': null, // Will be loaded by the screen
+      },
+    );
+
+    if (result is Map<String, dynamic> && result['success'] == true) {
+      // Reload employee data to reflect changes
+      _loadEmployeeDetails();
+      
+      // Show success message with details
+      if (mounted) {
+        final newSalary = result['newSalary'] as double?;
+        final previousSalary = result['previousSalary'] as double?;
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '✅ Cập nhật lương thành công!',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                if (previousSalary != null && newSalary != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Lương cũ: ${_safeCurrencyFormat(previousSalary)}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  Text(
+                    'Lương mới: ${_safeCurrencyFormat(newSalary)}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ],
+              ],
+            ),
+            backgroundColor: AppColors.successColor,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
+  }
+
   /// 💰 Show Add Adjustment Dialog
   void _showAddAdjustmentDialog({String type = 'BONUS'}) {
     final reasonController = TextEditingController();
@@ -1486,12 +1572,11 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
               try {
                 final request = CreateSalaryAdjustmentRequest(
                   employeeId: widget.employeeId,
-                  periodId: 1, // TODO: Get current period ID
                   adjustmentType: type,
-                  reason: reasonController.text,
                   amount: type.toUpperCase() == 'PENALTY' ? -amount : amount,
-                  adjustmentDate: DateTime.now(),
-                  approvedBy: 'HR', // TODO: Get from auth
+                  effectiveDate: DateTime.now(),
+                  description: reasonController.text,
+                  createdBy: 'HR Admin', // TODO: Get from auth service
                 );
 
                 final response = await _payrollService.createSalaryAdjustment(request);
