@@ -417,7 +417,15 @@ class ManualAttendanceProvider with ChangeNotifier {
       return _lastProcessResult!.success;
     } catch (e) {
       debugPrint('❌ Processing error: $e');
-      _errorMessage = 'Lỗi xử lý: $e';
+      if (e.toString().contains('401') || e.toString().contains('Unauthorized')) {
+        _errorMessage = 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
+      } else if (e.toString().contains('403') || e.toString().contains('Forbidden')) {
+        _errorMessage = 'Không có quyền thực hiện chấm công thủ công.';
+      } else if (e.toString().contains('Network') || e.toString().contains('Connection')) {
+        _errorMessage = 'Lỗi kết nối mạng. Vui lòng kiểm tra kết nối internet.';
+      } else {
+        _errorMessage = 'Lỗi xử lý: ${e.toString().replaceAll('Exception: ', '')}';
+      }
       return false;
     } finally {
       _isProcessingBatch = false;
