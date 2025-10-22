@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../services/health_check_service.dart';
 
@@ -21,13 +22,19 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
     try {
       final result = await HealthCheckService.checkApiHealth();
       setState(() {
-        testResult = result;
+        testResult = {
+          ...result,
+          'timestamp': DateTime.now().toIso8601String(),
+          'endpoint': 'Health Check',
+        };
       });
     } catch (e) {
       setState(() {
         testResult = {
           'success': false,
           'message': 'Test failed: ${e.toString()}',
+          'timestamp': DateTime.now().toIso8601String(),
+          'endpoint': 'Health Check',
         };
       });
     } finally {
@@ -48,8 +55,10 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
       setState(() {
         testResult = {
           'success': true,
-          'message': 'Multiple endpoints tested',
+          'message': 'Multiple endpoints tested successfully',
           'data': results,
+          'timestamp': DateTime.now().toIso8601String(),
+          'endpoint': 'Multiple Endpoints',
         };
       });
     } catch (e) {
@@ -57,6 +66,8 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
         testResult = {
           'success': false,
           'message': 'Test failed: ${e.toString()}',
+          'timestamp': DateTime.now().toIso8601String(),
+          'endpoint': 'Multiple Endpoints',
         };
       });
     } finally {
@@ -73,70 +84,84 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
         title: const Text('API Connection Test'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'API Endpoint',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'https://api.studyplannerapp.io.vn/api',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontFamily: 'monospace',
-                        backgroundColor: Colors.grey[100],
-                      ),
-                    ),
-                  ],
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: isLoading ? null : _testApiConnection,
-                    icon: const Icon(Icons.health_and_safety),
-                    label: const Text('Test Health Check'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: isLoading ? null : _testMultipleEndpoints,
-                    icon: const Icon(Icons.api),
-                    label: const Text('Test Multiple'),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            if (isLoading)
-              const Card(
                 child: Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Row(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CircularProgressIndicator(),
-                      SizedBox(width: 16),
-                      Text('Testing API connection...'),
+                      Text(
+                        'API Endpoint',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'https://api.studyplannerapp.io.vn/api',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodyMedium
+                            ?.copyWith(fontFamily: 'monospace'),
+                      ),
                     ],
                   ),
                 ),
               ),
-            if (testResult != null) ...[
-              Expanded(
-                child: Card(
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: isLoading ? null : _testApiConnection,
+                      icon: const Icon(Icons.health_and_safety),
+                      label: const Text('Test Health Check'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: isLoading ? null : _testMultipleEndpoints,
+                      icon: const Icon(Icons.api),
+                      label: const Text('Test Multiple'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              if (isLoading)
+                const Card(
+                  elevation: 1,
+                  margin: EdgeInsets.only(top: 8),
+                  child: Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Row(
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(width: 16),
+                        Text('Testing API connection...'),
+                      ],
+                    ),
+                  ),
+                ),
+              if (testResult != null) ...[
+                const SizedBox(height: 16),
+                Card(
+                  elevation: 2,
+                  color: testResult!['success'] == true
+                      ? Colors.green[50]
+                      : Colors.red[50],
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
@@ -157,32 +182,39 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
                               testResult!['success'] == true
                                   ? 'Connection Successful'
                                   : 'Connection Failed',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                color: testResult!['success'] == true
-                                    ? Colors.green
-                                    : Colors.red,
-                              ),
+                              style:
+                                  Theme.of(context).textTheme.titleMedium?.copyWith(
+                                        color: testResult!['success'] == true
+                                            ? Colors.green[800]
+                                            : Colors.red[800],
+                                      ),
                             ),
                           ],
                         ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Endpoint: ${testResult!['endpoint']}',
+                          style: const TextStyle(fontSize: 13, color: Colors.grey),
+                        ),
+                        Text(
+                          'Time: ${testResult!['timestamp']}',
+                          style: const TextStyle(fontSize: 13, color: Colors.grey),
+                        ),
                         const SizedBox(height: 16),
-                        Expanded(
-                          child: SingleChildScrollView(
-                            child: Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.grey[50],
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.grey[300]!),
-                              ),
-                              child: Text(
-                                testResult.toString(),
-                                style: const TextStyle(
-                                  fontFamily: 'monospace',
-                                  fontSize: 12,
-                                ),
-                              ),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey[300]!),
+                          ),
+                          child: Text(
+                            const JsonEncoder.withIndent('  ')
+                                .convert(testResult),
+                            style: const TextStyle(
+                              fontFamily: 'monospace',
+                              fontSize: 12,
                             ),
                           ),
                         ),
@@ -190,9 +222,9 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
                     ),
                   ),
                 ),
-              ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
