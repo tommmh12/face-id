@@ -154,7 +154,14 @@ class BaseApiService {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         // Success response (2xx)
         DebugHelper.logSuccess('Request thành công - Status ${response.statusCode}', tag: 'HTTP');
-        return ApiResponse.success(fromJson(jsonData), response.statusCode);
+        
+        // 🐛 FIX: Extract 'data' from response wrapper before passing to fromJson
+        // Backend trả về: {"success": true, "message": "...", "data": {...}}
+        // fromJson chỉ cần: {...} (data bên trong)
+        final dataJson = jsonData['data'] as Map<String, dynamic>? ?? jsonData;
+        print(">>> [handleRequest] Extracted data for fromJson: $dataJson");
+        
+        return ApiResponse.success(fromJson(dataJson), response.statusCode);
       } else {
         // Error response (4xx, 5xx) - Lấy thông báo lỗi từ JSON body
         DebugHelper.logError('Request thất bại - Status ${response.statusCode}', tag: 'HTTP');

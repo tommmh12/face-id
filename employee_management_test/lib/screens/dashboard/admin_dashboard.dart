@@ -759,6 +759,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ),
         ),
       ),
+      // ✅ TODO: Add Floating Action Button for Debug Access (Admin only)
+      // floatingActionButton: FloatingActionButton.extended(...),
     );
   }
 }

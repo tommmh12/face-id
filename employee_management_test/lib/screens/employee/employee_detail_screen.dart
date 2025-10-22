@@ -2,8 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/employee.dart';
 import '../../models/dto/payroll_dtos.dart';
+import '../../models/dto/attendance_dtos.dart';
+import '../../models/dto/today_attendance_dto.dart';
+import '../../models/dto/working_hours_dtos.dart';
 import '../../services/employee_api_service.dart';
 import '../../services/payroll_api_service.dart';
+import '../../services/attendance_api_service.dart';
+import '../../services/working_hours_api_service.dart';
 import '../../config/app_theme.dart';
 import '../payroll/widgets/edit_adjustment_dialog.dart';
 
@@ -19,14 +24,25 @@ class EmployeeDetailScreen extends StatefulWidget {
 class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
   final EmployeeApiService _employeeService = EmployeeApiService();
   final PayrollApiService _payrollService = PayrollApiService();
+  final AttendanceApiService _attendanceService = AttendanceApiService();
+  final WorkingHoursApiService _workingHoursService = WorkingHoursApiService();
   final _currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: '₫', decimalDigits: 0);
   
   Employee? _employee;
   List<SalaryAdjustmentResponse> _salaryAdjustments = [];
   PayrollRecordResponse? _currentPayroll;
+  List<PayrollRecordResponse> _salaryHistory = [];
+  List<AttendanceRecordResponse> _recentAttendance = [];
+  TodayAttendanceApiResponse? _todayAttendance;
+  AttendanceStatsData? _attendanceStats;
+  WorkingHoursPeriodSummary? _workingHoursSummary;
   bool _isLoading = true;
+  bool _isLoadingSecondaryData = false;
   bool _isLoadingAdjustments = false;
   bool _isLoadingPayroll = false;
+  bool _isLoadingSalaryHistory = false;
+  bool _isLoadingAttendance = false;
+  bool _isLoadingWorkingHours = false;
   String? _error;
 
   /// Safe currency formatting với error handling
@@ -49,47 +65,124 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
   }
 
   Future<void> _loadEmployeeDetails() async {
+    // Reset state properly
+    if (!mounted) return;
+    debugPrint(">>> Starting _loadEmployeeDetails for employee ID: ${widget.employeeId}");
+    
     setState(() {
-      _isLoading = true;
+      _isLoading = true; // Start main loading
       _error = null;
+      _employee = null;
+      _salaryAdjustments = []; // Reset secondary data
+      _currentPayroll = null;
     });
 
     try {
-      final response = await _employeeService.getEmployeeById(
-        widget.employeeId,
-      );
+      // --- STEP 1: Load EMPLOYEE DATA ---
+      debugPrint(">>> Calling API to get employee by ID: ${widget.employeeId}");
+      final employeeResponse = await _employeeService.getEmployeeById(widget.employeeId);
+      if (!mounted) return; // Check after await
 
-      if (response.success && response.data != null) {
-        setState(() {
-          _employee = response.data!;
-        });
+      debugPrint(">>> API Response: success=${employeeResponse.success}, data=${employeeResponse.data != null ? 'not null' : 'null'}");
+      
+      if (employeeResponse.success && employeeResponse.data != null) {
+        // --- SUCCESS: Employee data loaded ---
+        debugPrint(">>> SUCCESS: Employee data received: ${employeeResponse.data!.fullName}");
+        debugPrint(">>> Setting employee state and turning off loading...");
         
-        // Load salary adjustments and current payroll after employee data is loaded
-        await _loadSalaryAdjustments();
-        await _loadCurrentPayroll();
-      } else {
         setState(() {
-          _error = response.message ?? 'Không thể tải thông tin nhân viên';
+          _employee = employeeResponse.data!;
+          _isLoading = false; // <<< TURN OFF MAIN LOADING as soon as we have employee
+        });
+
+        debugPrint(">>> Employee state set successfully. Now loading secondary data...");
+
+        // --- STEP 2: Load SECONDARY DATA (Salary, Adjustments & Attendance) ---
+        setState(() {
+          _isLoadingSecondaryData = true;
+        });
+
+        await _loadSalaryAdjustments();   // Load salary adjustments
+        await _loadCurrentPayroll();      // Load current payroll
+        await _loadSalaryHistory();       // Load salary history
+        await _loadAttendanceData();      // Load attendance data
+        await _loadWorkingHoursSummary(); // Load working hours summary
+
+        if (mounted) {
+          setState(() {
+            _isLoadingSecondaryData = false;
+          });
+        }
+
+        debugPrint(">>> All data loading completed successfully!");
+
+      } else {
+        // --- FAILURE: Employee data failed to load ---
+        debugPrint(">>> FAILURE: Employee API failed - ${employeeResponse.message}");
+        setState(() {
+          _error = employeeResponse.message ?? 'Không thể tải thông tin nhân viên';
+          _isLoading = false; // Turn off main loading when there's employee loading error
         });
       }
     } catch (e) {
+      // --- CRITICAL ERROR: Employee loading failed ---
+      debugPrint(">>> CRITICAL ERROR: Exception in _loadEmployeeDetails - $e");
+      if (!mounted) return;
       setState(() {
-        _error = 'Lỗi: ${e.toString()}';
-      });
-    } finally {
-      setState(() {
-        _isLoading = false;
+        _error = 'Lỗi tải thông tin nhân viên: ${e.toString()}';
+        _isLoading = false; // Turn off main loading when there's critical error
       });
     }
+    // No finally block needed anymore
   }
 
   Future<void> _deleteEmployee() async {
+    if (_employee == null) return;
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Xác nhận xóa'),
-        content: Text(
-          'Bạn có chắc muốn xóa nhân viên "${_employee?.fullName ?? 'Chưa có tên'}"?',
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: AppColors.errorColor, size: 28),
+            const SizedBox(width: 12),
+            const Text('Xác nhận xóa nhân viên'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Nhân viên: ${_employee!.fullName}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Text('Mã NV: ${_employee!.employeeCode}'),
+                  Text('Phòng ban: ${_employee!.departmentName ?? "Chưa xác định"}'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              '⚠️ Nhân viên sẽ chuyển sang trạng thái "Tạm dừng" và có thể khôi phục sau.',
+              style: TextStyle(fontSize: 14, color: Colors.orange),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Dữ liệu chấm công và lương sẽ được giữ nguyên.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -100,8 +193,9 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.errorColor,
+              foregroundColor: Colors.white,
             ),
-            child: const Text('Xóa'),
+            child: const Text('Xóa nhân viên'),
           ),
         ],
       ),
@@ -109,10 +203,59 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
 
     if (confirm != true || !mounted) return;
 
-    // TODO: Implement delete API call
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Chức năng xóa sẽ được triển khai sau')),
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
     );
+
+    try {
+      final response = await _employeeService.deleteEmployee(widget.employeeId);
+      
+      // Close loading dialog
+      if (mounted) Navigator.pop(context);
+
+      if (response.success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 8),
+                Text('Đã xóa nhân viên "${_employee!.fullName}" thành công'),
+              ],
+            ),
+            backgroundColor: AppColors.successColor,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        
+        // Navigate back to employee list
+        Navigator.pop(context, true); // Return true to indicate deletion success
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi: ${response.message ?? "Không thể xóa nhân viên"}'),
+            backgroundColor: AppColors.errorColor,
+          ),
+        );
+      }
+    } catch (e) {
+      // Close loading dialog
+      if (mounted) Navigator.pop(context);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi: $e'),
+            backgroundColor: AppColors.errorColor,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _updateFaceId() async {
@@ -225,44 +368,236 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
   }
 
   Future<void> _loadCurrentPayroll() async {
-    if (_employee == null) return;
-    
+    if (_employee == null || !mounted) return;
+
     setState(() {
       _isLoadingPayroll = true;
+      // Don't reset _currentPayroll here if you want to keep old value during refresh
     });
 
     try {
-      // Get current period (assume period ID = 1 for now)
-      // TODO: Get actual current period from API
-      final response = await _payrollService.getEmployeePayroll(1, widget.employeeId);
-      
+      final response = await _payrollService.getEmployeePayroll(1, widget.employeeId); // TODO: Get periodId dynamically
+      if (!mounted) return; // Check after await
+
       if (response.success && response.data != null) {
         setState(() {
           _currentPayroll = response.data!;
         });
       } else {
-        // Log the error message for debugging
+        // API success but success=false or 404 returned like this
+        setState(() {
+          _currentPayroll = null; // <<< Important: Set to null when not found
+        });
         debugPrint('Failed to load payroll: ${response.message}');
       }
     } catch (e, stackTrace) {
-      // Silent error for payroll - không ảnh hưởng đến thông tin chính
-      debugPrint('Failed to load current payroll: $e');
-      debugPrint('Stack trace: $stackTrace');
-      
-      // Optionally show a user-friendly message
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Không thể tải thông tin lương: ${e.toString()}'),
-            backgroundColor: Colors.orange,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
+       if (!mounted) return; // Check after await
+       setState(() {
+         _currentPayroll = null; // <<< Important: Set to null when error occurs
+       });
+       debugPrint('Failed to load current payroll: $e');
+       debugPrint('Stack trace: $stackTrace');
+       // Can show SnackBar if desired, but don't set _error globally
+       // ScaffoldMessenger.of(context).showSnackBar(...);
     } finally {
+      if (!mounted) return; // Check after await
       setState(() {
         _isLoadingPayroll = false;
       });
+    }
+  }
+
+  Future<void> _loadSalaryHistory() async {
+    if (_employee == null || !mounted) return;
+
+    setState(() {
+      _isLoadingSalaryHistory = true;
+    });
+
+    try {
+      // TODO: Implement getEmployeePayrollHistory API when backend is ready
+      // For now, we'll use a placeholder or load multiple periods
+      await Future.delayed(const Duration(milliseconds: 500)); // Simulate loading
+      
+      if (!mounted) return;
+      setState(() {
+        _salaryHistory = []; // Empty for now until API is implemented
+      });
+      
+      debugPrint('Salary history loading completed (placeholder)');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _salaryHistory = [];
+      });
+      debugPrint('Failed to load salary history: $e');
+    } finally {
+      if (!mounted) return;
+      setState(() {
+        _isLoadingSalaryHistory = false;
+      });
+    }
+  }
+
+  /// Load attendance data (today's attendance, recent history, and stats)
+  Future<void> _loadAttendanceData() async {
+    if (_employee == null || !mounted) return;
+
+    setState(() {
+      _isLoadingAttendance = true;
+    });
+
+    // Load today's attendance - independent error handling
+    try {
+      final todayResponse = await _attendanceService.getEmployeeTodayAttendance(widget.employeeId);
+      if (mounted && todayResponse.success) {
+        setState(() {
+          _todayAttendance = todayResponse;
+        });
+      } else if (mounted) {
+        // API returned success=false or 404 - this is normal for new employees
+        debugPrint('Today attendance not found for employee ${widget.employeeId}: ${todayResponse.message}');
+        setState(() {
+          _todayAttendance = null;
+        });
+      }
+    } catch (e, stackTrace) {
+      debugPrint('Failed to load today attendance for employee ${widget.employeeId}: $e');
+      debugPrint('Stack trace: ${stackTrace.toString()}');
+      // Set null state to show "no data" UI instead of error
+      if (mounted) {
+        setState(() {
+          _todayAttendance = null;
+        });
+      }
+    }
+
+    // Load recent attendance history - independent error handling
+    try {
+      final historyRequest = AttendanceHistoryRequest(
+        employeeId: widget.employeeId,
+        fromDate: DateTime.now().subtract(const Duration(days: 7)),
+        toDate: DateTime.now(),
+        pageSize: 10,
+        sortBy: 'date',
+        sortOrder: 'desc',
+      );
+      
+      final historyResponse = await _attendanceService.getEmployeeAttendanceHistory(
+        widget.employeeId,
+        historyRequest,
+      );
+      
+      if (mounted && historyResponse.success) {
+        setState(() {
+          _recentAttendance = historyResponse.records;
+        });
+      } else if (mounted) {
+        // API returned success=false or 404 - normal for employees with no attendance history
+        debugPrint('Attendance history not found for employee ${widget.employeeId}: ${historyResponse.message}');
+        setState(() {
+          _recentAttendance = [];
+        });
+      }
+    } catch (e, stackTrace) {
+      debugPrint('Failed to load attendance history for employee ${widget.employeeId}: $e');
+      debugPrint('Stack trace: ${stackTrace.toString()}');
+      // Set empty list to show "no data" UI instead of error
+      if (mounted) {
+        setState(() {
+          _recentAttendance = [];
+        });
+      }
+    }
+
+    // Load attendance statistics - independent error handling
+    try {
+      final now = DateTime.now();
+      final firstDayOfMonth = DateTime(now.year, now.month, 1);
+      final statsRequest = AttendanceStatsRequest(
+        employeeId: widget.employeeId,
+        fromDate: firstDayOfMonth,
+        toDate: now,
+        period: 'monthly',
+      );
+      
+      final statsResponse = await _attendanceService.getEmployeeAttendanceStatistics(
+        widget.employeeId,
+        statsRequest,
+      );
+      
+      if (mounted && statsResponse.success && statsResponse.stats != null) {
+        setState(() {
+          _attendanceStats = statsResponse.stats!;
+        });
+      } else if (mounted) {
+        // API returned success=false or no stats - normal for new employees
+        debugPrint('Attendance statistics not found for employee ${widget.employeeId}: ${statsResponse.message}');
+        setState(() {
+          _attendanceStats = null;
+        });
+      }
+    } catch (e, stackTrace) {
+      debugPrint('Failed to load attendance statistics for employee ${widget.employeeId}: $e');
+      debugPrint('Stack trace: ${stackTrace.toString()}');
+      // Set null to show "no data" UI instead of error
+      if (mounted) {
+        setState(() {
+          _attendanceStats = null;
+        });
+      }
+    }
+
+    // Always complete loading regardless of individual API failures
+    if (mounted) {
+      setState(() {
+        _isLoadingAttendance = false;
+      });
+    }
+  }
+
+  /// 🕐 Load Working Hours Summary (from October to now)
+  Future<void> _loadWorkingHoursSummary() async {
+    if (_employee == null) return;
+    
+    if (!mounted) return;
+    setState(() {
+      _isLoadingWorkingHours = true;
+    });
+
+    try {
+      debugPrint("🕐 Loading working hours summary for employee ${_employee!.id}");
+      
+      // Calculate from October 2025 to current month
+      final fromYear = 2025;
+      final fromMonth = 10;
+      
+      final summary = await _workingHoursService.getWorkingHoursSummaryFromMonth(
+        _employee!.id,
+        _employee!.fullName,
+        fromYear,
+        fromMonth,
+      );
+      
+      if (mounted) {
+        setState(() {
+          _workingHoursSummary = summary;
+        });
+        debugPrint("✅ Working hours summary loaded: ${summary.formattedTotalHours}, ${summary.formattedTotalWorkingDays}");
+      }
+    } catch (e) {
+      debugPrint("❌ Failed to load working hours summary: $e");
+      if (mounted) {
+        setState(() {
+          _workingHoursSummary = null;
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingWorkingHours = false;
+        });
+      }
     }
   }
 
@@ -423,11 +758,27 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
   }
 
   Widget _buildBody() {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+    // Primary loading - loading employee basic information
+    if (_isLoading && _employee == null) {
+      debugPrint(">>> Employee Detail Screen: Loading primary data...");
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(
+              'Đang tải thông tin nhân viên...',
+              style: AppTextStyles.bodyMedium,
+            ),
+          ],
+        ),
+      );
     }
 
-    if (_error != null) {
+    // Primary error - employee data failed to load
+    if (_error != null && _employee == null) {
+      debugPrint(">>> Employee Detail Screen: Primary error state - $_error");
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -445,9 +796,15 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
       );
     }
 
+    // Employee data not found
     if (_employee == null) {
+      debugPrint(">>> Employee Detail Screen: Employee is null");
       return const Center(child: Text('Không tìm thấy thông tin nhân viên'));
     }
+
+    // Add debug print to confirm we have employee data
+    debugPrint(">>> Building employee UI. Employee: ${_employee!.fullName} (ID: ${_employee!.id})");
+    debugPrint(">>> Employee data: departmentName=${_employee!.departmentName}, email=${_employee!.email}");
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.xl),
@@ -463,23 +820,39 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
             title: 'Thông tin cơ bản',
             children: [
               _buildInfoRow('Mã nhân viên', '#${_employee!.id}'),
-              _buildInfoRow('Họ tên', _employee!.fullName),
-              _buildInfoRow('Email', _employee!.email ?? 'Chưa có'),
+              _buildInfoRow('Họ tên', _employee!.fullName.isNotEmpty ? _employee!.fullName : 'Chưa có tên'),
+              _buildInfoRow('Email', _employee!.email?.isNotEmpty == true ? _employee!.email! : 'Chưa có'),
               _buildInfoRow(
                 'Số điện thoại',
-                _employee!.phoneNumber ?? 'Chưa có',
+                _employee!.phoneNumber?.isNotEmpty == true ? _employee!.phoneNumber! : 'Chưa có',
               ),
-              _buildInfoRow('Chức vụ', _employee!.position ?? 'Chưa có'),
+              _buildInfoRow('Chức vụ', _employee!.position?.isNotEmpty == true ? _employee!.position! : 'Chưa có'),
             ],
           ),
 
           const SizedBox(height: AppSpacing.lg),
 
           _buildSection(
-            title: 'Phòng ban',
+            title: 'Phòng ban & Vai trò',
             children: [
-              _buildInfoRow('Phòng ban', 'ID: ${_employee!.departmentId}'),
-              // TODO: Load department name
+              _buildInfoRow('Phòng ban', _employee!.departmentName ?? 'Chưa xác định'),
+              if (_employee!.departmentCode != null)
+                _buildInfoRow('Mã phòng ban', _employee!.departmentCode!),
+              _buildInfoRow('Vai trò', _employee!.roleName ?? 'Chưa có'),
+              if (_employee!.roleLevel != null)
+                _buildInfoRow('Cấp độ', _employee!.roleLevel.toString()),
+              _buildInfoRow(
+                'Tài khoản hệ thống',
+                _employee!.hasAccount ? 'Đã cấp' : 'Chưa cấp',
+                valueColor: _employee!.hasAccount 
+                    ? AppColors.successColor 
+                    : AppColors.textSecondary,
+              ),
+              if (_employee!.accountProvisionedAt != null)
+                _buildInfoRow(
+                  'Ngày cấp tài khoản',
+                  _formatDate(_employee!.accountProvisionedAt!),
+                ),
             ],
           ),
 
@@ -507,13 +880,87 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
 
           const SizedBox(height: AppSpacing.lg),
 
+          // � Activity Status Section
+          _buildSection(
+            title: 'Trạng thái Hoạt động',
+            children: [
+              _buildInfoRow(
+                'Trạng thái', 
+                _employee!.currentStatus ?? 'Offline',
+                valueColor: _employee!.currentStatus == "Working" 
+                            ? AppColors.successColor 
+                            : AppColors.textSecondary,
+              ),
+              // Chỉ hiển thị thời gian check-in nếu có
+              if (_employee!.lastCheckInToday != null)
+                _buildInfoRow(
+                  'Check-in lần cuối (hôm nay)', 
+                  _formatDate(_employee!.lastCheckInToday!)
+                ),
+              // Chỉ hiển thị thời gian cập nhật nếu có
+              if (_employee!.statusUpdatedAt != null)
+                _buildInfoRow(
+                  'Cập nhật lúc', 
+                  _formatDate(_employee!.statusUpdatedAt!)
+                ),
+            ],
+          ),
+
+          const SizedBox(height: AppSpacing.lg),
+
+          // �💰 Basic Salary Information Section
+          // Loading indicator for secondary data
+          if (_isLoadingSecondaryData)
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: const Row(
+                children: [
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryBlue),
+                    ),
+                  ),
+                  SizedBox(width: AppSpacing.sm),
+                  Text(
+                    'Đang tải thông tin lương & chấm công...',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          _buildBasicSalarySection(),
+
+          const SizedBox(height: AppSpacing.lg),
+
           // 💰 Current Salary Information Section
           _buildCurrentSalarySection(),
           
           const SizedBox(height: AppSpacing.lg),
 
-          // 💰 Salary Adjustments Section
+          // 💰 Salary Adjustments Section  
           _buildSalaryAdjustmentsSection(),
+          
+          const SizedBox(height: AppSpacing.lg),
+
+          // � Salary History Section
+          _buildSalaryHistorySection(),
+          
+          const SizedBox(height: AppSpacing.lg),
+
+          // �📊 Attendance Section
+          _buildAttendanceSection(),
+          
+          const SizedBox(height: AppSpacing.lg),
+
+          // 🕐 Working Hours Summary Section
+          _buildWorkingHoursSummarySection(),
           
           const SizedBox(height: AppSpacing.lg),
 
@@ -691,6 +1138,28 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
+                const SizedBox(width: 12),
+                // Current Status Indicator
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: _employee!.currentStatus == "Working"
+                        ? Colors.greenAccent.shade400
+                        : Colors.grey,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: (_employee!.currentStatus == "Working"
+                                ? Colors.greenAccent.shade400
+                                : Colors.grey)
+                            .withOpacity(0.6),
+                        blurRadius: 4,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -777,6 +1246,186 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                 fontWeight: FontWeight.w600,
                 color: valueColor ?? AppColors.textPrimary,
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 💰 BASIC SALARY INFORMATION SECTION
+  Widget _buildBasicSalarySection() {
+    return _buildSection(
+      title: 'Thông tin lương cơ bản',
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Colors.blue.shade50,
+                Colors.blue.shade100,
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,  
+            ),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.blue.shade200),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.monetization_on,
+                    color: Colors.blue.shade700,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Lương cơ bản theo vị trí',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue.shade800,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              
+              // Basic salary info based on position and department
+              _buildBasicSalaryInfoRow(
+                'Vị trí',
+                _employee?.position ?? 'Chưa xác định',
+                icon: Icons.work,
+              ),
+              _buildBasicSalaryInfoRow(
+                'Phòng ban',
+                _employee?.departmentName ?? 'Chưa xác định',
+                icon: Icons.business,
+              ),
+              
+              const Divider(height: 20),
+              
+              // Current payroll status
+              if (_isLoadingPayroll)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.blue.shade600,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Đang tải thông tin lương hiện tại...',
+                        style: TextStyle(
+                          color: Colors.blue.shade700,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else if (_currentPayroll != null)
+                Column(
+                  children: [
+                    _buildBasicSalaryInfoRow(
+                      'Lương cơ bản hiện tại',
+                      _safeCurrencyFormat(_currentPayroll!.baseSalaryActual),
+                      icon: Icons.payments,
+                      valueColor: Colors.green.shade700,
+                      isBold: true,
+                    ),
+                    _buildBasicSalaryInfoRow(
+                      'Kỳ lương',
+                      'Kỳ ${_currentPayroll!.payrollPeriodId}',
+                      icon: Icons.calendar_month,
+                    ),
+                  ],
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: Colors.orange.shade700,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Chưa có thông tin lương cho kỳ hiện tại',
+                          style: TextStyle(
+                            color: Colors.orange.shade800,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBasicSalaryInfoRow(
+    String label, 
+    String value, {
+    IconData? icon,
+    Color? valueColor,
+    bool isBold = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          if (icon != null) ...[
+            Icon(
+              icon,
+              size: 16,
+              color: Colors.blue.shade600,
+            ),
+            const SizedBox(width: 8),
+          ],
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade700,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
+                color: valueColor ?? Colors.black87,
+              ),
+              textAlign: TextAlign.right,
             ),
           ),
         ],
@@ -1628,6 +2277,1147 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
               foregroundColor: Colors.white,
             ),
             child: Text('Thêm $typeName'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// � SALARY HISTORY SECTION
+  Widget _buildSalaryHistorySection() {
+    return _buildSection(
+      title: '💰 Lịch sử lương',
+      children: [
+        if (_isLoadingSalaryHistory) ...[
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: CircularProgressIndicator(),
+            ),
+          ),
+        ] else if (_salaryHistory.isEmpty) ...[
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.orange.shade50,
+                  Colors.orange.shade100,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.orange.shade200),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.history,
+                      color: Colors.orange.shade700,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Chưa có lịch sử lương',
+                        style: TextStyle(
+                          color: Colors.orange.shade800,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Lịch sử lương sẽ hiển thị sau khi có kỳ lương đầu tiên được tính toán.',
+                  style: TextStyle(
+                    color: Colors.orange.shade700,
+                    fontSize: 14,
+                  ),
+                ),
+                if (_currentPayroll != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.orange.shade300),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.payment,
+                              color: Colors.green.shade600,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Lương hiện tại (Kỳ ${_currentPayroll!.payrollPeriodId})',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green.shade800,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Lương thực nhận:',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey.shade700,
+                              ),
+                            ),
+                            Text(
+                              _safeCurrencyFormat(_currentPayroll!.netSalary),
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Ngày tính lương:',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                            Text(
+                              _formatDate(_currentPayroll!.calculatedAt),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ] else ...[
+          // Future: Display salary history when API is implemented
+          Column(
+            children: _salaryHistory.take(5).map((record) => 
+              _buildSalaryHistoryCard(record)
+            ).toList(),
+          ),
+          
+          if (_salaryHistory.length > 5) ...[
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () {
+                // TODO: Navigate to full salary history screen
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Xem lịch sử lương chi tiết (Coming soon)'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.history, size: 16),
+              label: Text('Xem tất cả ${_salaryHistory.length} kỳ lương'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primaryBlue,
+                side: BorderSide(color: AppColors.primaryBlue),
+              ),
+            ),
+          ],
+        ],
+        
+        const SizedBox(height: 16),
+        
+        // Salary statistics summary
+        _buildSalarySummaryStats(),
+      ],
+    );
+  }
+
+  Widget _buildSalaryHistoryCard(PayrollRecordResponse record) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Kỳ lương ${record.payrollPeriodId}',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              Text(
+                _safeCurrencyFormat(record.netSalary),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green.shade700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Lương cơ bản',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+              Text(
+                _safeCurrencyFormat(record.baseSalaryActual),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Ngày tính lương',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade500,
+                ),
+              ),
+              Text(
+                _formatDate(record.calculatedAt),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade500,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSalarySummaryStats() {
+    if (_currentPayroll == null) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.info_outline, color: Colors.grey.shade500, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'Không có dữ liệu thống kê lương',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.blue.shade50,
+            Colors.blue.shade100,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blue.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.analytics,
+                color: Colors.blue.shade700,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Thống kê lương',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue.shade800,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatItem(
+                  'Số ngày làm việc',
+                  '${_currentPayroll!.totalWorkingDays.toInt()} ngày',
+                  Icons.calendar_today,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatItem(
+                  'Giờ OT',
+                  '${_currentPayroll!.totalOTHours.toStringAsFixed(1)}h',
+                  Icons.access_time,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatItem(
+                  'Tổng thu nhập',
+                  _safeCurrencyFormat(_currentPayroll!.adjustedGrossIncome),
+                  Icons.trending_up,
+                  color: Colors.green.shade600,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatItem(
+                  'Tổng khấu trừ',
+                  _safeCurrencyFormat(
+                    _currentPayroll!.insuranceDeduction + 
+                    _currentPayroll!.pitDeduction + 
+                    _currentPayroll!.otherDeductions
+                  ),
+                  Icons.trending_down,
+                  color: Colors.red.shade600,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String label, String value, IconData icon, {Color? color}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: color ?? Colors.blue.shade600,
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade700,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: color ?? Colors.black87,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// �📊 ATTENDANCE SECTION
+  Widget _buildAttendanceSection() {
+    return _buildSection(
+      title: '📊 Thông tin chấm công',
+      children: [
+        if (_isLoadingAttendance) ...[
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: CircularProgressIndicator(),
+            ),
+          ),
+        ] else ...[
+          // Today's attendance card
+          if (_todayAttendance != null) _buildTodayAttendanceCard(),
+          
+          const SizedBox(height: 16),
+          
+          // Attendance statistics
+          if (_attendanceStats != null) _buildAttendanceStatsCard(),
+          
+          const SizedBox(height: 16),
+          
+          // Recent attendance history
+          _buildRecentAttendanceList(),
+          
+          const SizedBox(height: 16),
+          
+          // View full attendance history button
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pushNamed(
+                context,
+                '/attendance/employee-history',
+                arguments: {
+                  'employeeId': widget.employeeId,
+                  'employeeName': _employee?.fullName ?? 'Chưa có tên',
+                  'employeeCode': _employee?.employeeCode,
+                },
+              );
+            },
+            icon: const Icon(Icons.history),
+            label: const Text('Xem lịch sử chấm công đầy đủ'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryBlue,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// Today's attendance card
+  Widget _buildTodayAttendanceCard() {
+    if (_todayAttendance == null || (!_todayAttendance!.hasCheckedIn && !_todayAttendance!.hasCheckedOut)) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.info_outline, color: Colors.grey.shade600, size: 20),
+            const SizedBox(width: 8),
+            const Text('Chưa có dữ liệu chấm công hôm nay'),
+          ],
+        ),
+      );
+    }
+
+    final attendance = _todayAttendance!;
+    final statusColor = attendance.getStatusColor();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [statusColor.withOpacity(0.1), statusColor.withOpacity(0.05)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: statusColor.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.today, color: statusColor, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Chấm công hôm nay',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: statusColor,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  attendance.statusDisplay,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildTimeInfo(
+                  'Giờ vào',
+                  attendance.checkIn?.checkTime,
+                  Icons.login,
+                  Colors.green,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildTimeInfo(
+                  'Giờ ra',
+                  attendance.checkOut?.checkTime,
+                  Icons.logout,
+                  Colors.orange,
+                ),
+              ),
+            ],
+          ),
+          if (attendance.workingHoursDisplay != null) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.access_time, size: 16, color: Colors.blue.shade600),
+                const SizedBox(width: 4),
+                Text(
+                  'Giờ làm việc: ${attendance.workingHoursDisplay}',
+                  style: TextStyle(fontSize: 14, color: Colors.blue.shade600),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Build time info widget
+  Widget _buildTimeInfo(String label, DateTime? time, IconData icon, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          time != null 
+            ? DateFormat('HH:mm').format(time)
+            : '--:--',
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Attendance statistics card
+  Widget _buildAttendanceStatsCard() {
+    if (_attendanceStats == null) return const SizedBox();
+
+    final stats = _attendanceStats!;
+    final attendanceRate = stats.attendanceRate;
+    final rateColor = AttendanceApiService.getAttendanceRateColor(attendanceRate);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.analytics, color: rateColor, size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                'Thống kê tháng này',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: rateColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${attendanceRate.toStringAsFixed(1)}%',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatItem(
+                  'Tổng ngày',
+                  stats.totalDays.toString(),
+                  Icons.calendar_month,
+                  color: Colors.blue,
+                ),
+              ),
+              Expanded(
+                child: _buildStatItem(
+                  'Có mặt',
+                  stats.presentDays.toString(),
+                  Icons.check_circle,
+                  color: Colors.green,
+                ),
+              ),
+              Expanded(
+                child: _buildStatItem(
+                  'Vắng',
+                  stats.absentDays.toString(),
+                  Icons.cancel,
+                  color: Colors.red,
+                ),
+              ),
+              Expanded(
+                child: _buildStatItem(
+                  'Đi muộn',
+                  stats.lateDays.toString(),
+                  Icons.access_time,
+                  color: Colors.orange,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Recent attendance list
+  Widget _buildRecentAttendanceList() {
+    if (_recentAttendance.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.info_outline, color: Colors.grey.shade600, size: 20),
+            const SizedBox(width: 8),
+            const Text('Chưa có lịch sử chấm công'),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.history, size: 18, color: Colors.blue),
+            const SizedBox(width: 6),
+            const Text(
+              'Lịch sử gần đây (7 ngày)',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ...(_recentAttendance.take(5).map((record) => _buildAttendanceItem(record))),
+      ],
+    );
+  }
+
+  /// Build attendance item
+  Widget _buildAttendanceItem(AttendanceRecordResponse record) {
+    final statusColor = record.getStatusColor();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: statusColor.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: statusColor.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Icon(
+              _getAttendanceIcon(record.status),
+              color: statusColor,
+              size: 16,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      DateFormat('dd/MM/yyyy').format(record.date),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: statusColor,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        record.getStatusDisplayText(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    if (record.checkInTime != null) ...[
+                      Icon(Icons.login, size: 12, color: Colors.green.shade600),
+                      const SizedBox(width: 2),
+                      Text(
+                        DateFormat('HH:mm').format(record.checkInTime!),
+                        style: TextStyle(fontSize: 12, color: Colors.green.shade600),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    if (record.checkOutTime != null) ...[
+                      Icon(Icons.logout, size: 12, color: Colors.orange.shade600),
+                      const SizedBox(width: 2),
+                      Text(
+                        DateFormat('HH:mm').format(record.checkOutTime!),
+                        style: TextStyle(fontSize: 12, color: Colors.orange.shade600),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    if (record.workHours != null) ...[
+                      Icon(Icons.access_time, size: 12, color: Colors.blue.shade600),
+                      const SizedBox(width: 2),
+                      Text(
+                        AttendanceApiService.formatWorkHours(record.workHours),
+                        style: TextStyle(fontSize: 12, color: Colors.blue.shade600),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _getAttendanceIcon(String status) {
+    switch (status.toLowerCase()) {
+      case 'present':
+      case 'completed':
+        return Icons.check_circle;
+      case 'late':
+        return Icons.access_time;
+      case 'absent':
+        return Icons.cancel;
+      case 'early_leave':
+        return Icons.exit_to_app;
+      case 'working':
+        return Icons.work;
+      default:
+        return Icons.help_outline;
+    }
+  }
+
+  /// 🕐 Build Working Hours Summary Section
+  Widget _buildWorkingHoursSummarySection() {
+    return _buildSection(
+      title: '🕐 Thống Kê Giờ Làm Việc (Từ tháng 10/2025)',
+      children: [
+        if (_isLoadingWorkingHours)
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: const Row(
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryBlue),
+                  ),
+                ),
+                SizedBox(width: AppSpacing.sm),
+                Text(
+                  'Đang tính toán giờ làm việc...',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          )
+        else if (_workingHoursSummary != null)
+          _buildWorkingHoursSummaryCard()
+        else
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: const Row(
+              children: [
+                Icon(Icons.info_outline, color: AppColors.textSecondary, size: 16),
+                SizedBox(width: AppSpacing.sm),
+                Text(
+                  'Chưa có dữ liệu giờ làm việc',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// 🕐 Build Working Hours Summary Card
+  Widget _buildWorkingHoursSummaryCard() {
+    if (_workingHoursSummary == null) return const SizedBox.shrink();
+    
+    final summary = _workingHoursSummary!;
+    final currentMonth = DateTime.now().month;
+    final currentYear = DateTime.now().year;
+    
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primaryBlue.withOpacity(0.1),
+            AppColors.primaryBlue.withOpacity(0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppSpacing.sm),
+        border: Border.all(color: AppColors.primaryBlue.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with period info
+          Row(
+            children: [
+              Icon(Icons.schedule, color: AppColors.primaryBlue, size: 20),
+              const SizedBox(width: AppSpacing.xs),
+              Text(
+                summary.periodDescription,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primaryBlue,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xs,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryBlue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  '${summary.monthlySummaries.length} tháng',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.primaryBlue,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: AppSpacing.md),
+          
+          // Total summary cards
+          Row(
+            children: [
+              Expanded(
+                child: _buildWorkingHoursMetricCard(
+                  '⏰ Tổng Giờ Làm',
+                  summary.formattedTotalHours,
+                  '≈ ${summary.averageHoursPerMonth.toStringAsFixed(1)}h/tháng',
+                  AppColors.primaryBlue,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: _buildWorkingHoursMetricCard(
+                  '📅 Tổng Ngày Công',
+                  summary.formattedTotalWorkingDays,
+                  '≈ ${summary.averageWorkingDaysPerMonth.toStringAsFixed(1)} ngày/tháng',
+                  AppColors.successColor,
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: AppSpacing.md),
+          
+          // Monthly breakdown title
+          Text(
+            'Chi tiết theo tháng:',
+            style: AppTextStyles.bodySmall.copyWith(
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          
+          const SizedBox(height: AppSpacing.sm),
+          
+          // Monthly breakdown list
+          ...summary.monthlySummaries.map((monthSummary) {
+            final isCurrentMonth = monthSummary.month == currentMonth && 
+                                   monthSummary.year == currentYear;
+            
+            return Container(
+              margin: const EdgeInsets.only(bottom: AppSpacing.xs),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: AppSpacing.xs,
+              ),
+              decoration: BoxDecoration(
+                color: isCurrentMonth 
+                    ? AppColors.primaryBlue.withOpacity(0.08)
+                    : Colors.white.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(6),
+                border: isCurrentMonth 
+                    ? Border.all(color: AppColors.primaryBlue.withOpacity(0.3))
+                    : null,
+              ),
+              child: Row(
+                children: [
+                  // Month indicator
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: isCurrentMonth 
+                          ? AppColors.primaryBlue
+                          : AppColors.textSecondary.withOpacity(0.6),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  
+                  // Month name
+                  Expanded(
+                    flex: 2,
+                    child: Text(
+                      monthSummary.monthName,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        fontWeight: isCurrentMonth ? FontWeight.w600 : FontWeight.w500,
+                        color: isCurrentMonth ? AppColors.primaryBlue : AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  
+                  // Hours
+                  Expanded(
+                    flex: 2,
+                    child: Text(
+                      monthSummary.formattedTotalHours,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textPrimary,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  
+                  // Working days
+                  Expanded(
+                    flex: 2,
+                    child: Text(
+                      monthSummary.formattedWorkingDays,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textPrimary,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  
+                  // Attendance rate
+                  Expanded(
+                    flex: 1,
+                    child: Text(
+                      monthSummary.formattedAttendanceRate,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: monthSummary.attendanceRate >= 90
+                            ? AppColors.successColor
+                            : monthSummary.attendanceRate >= 80
+                                ? AppColors.warningColor
+                                : AppColors.errorColor,
+                      ),
+                      textAlign: TextAlign.end,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+          
+          const SizedBox(height: AppSpacing.sm),
+          
+          // Footer note
+          Text(
+            'Cập nhật lúc: ${DateFormat('dd/MM/yyyy HH:mm').format(summary.calculatedAt)}',
+            style: AppTextStyles.bodySmall.copyWith(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 🕐 Build Working Hours Metric Card
+  Widget _buildWorkingHoursMetricCard(
+    String title,
+    String value,
+    String subtitle,
+    Color color,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: AppTextStyles.bodyLarge.copyWith(
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            subtitle,
+            style: AppTextStyles.bodySmall.copyWith(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
           ),
         ],
       ),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../models/department.dart';
-import '../../services/employee_api_service.dart';
+import '../../models/dto/department_dtos.dart';
+import '../../services/department_api_service.dart';
+import '../../utils/vietnam_time_zone.dart';
 import '../../config/app_theme.dart';
 
 class DepartmentManagementScreen extends StatefulWidget {
@@ -13,10 +15,11 @@ class DepartmentManagementScreen extends StatefulWidget {
 
 class _DepartmentManagementScreenState
     extends State<DepartmentManagementScreen> {
-  final EmployeeApiService _service = EmployeeApiService();
+  final DepartmentApiService _service = DepartmentApiService();
   List<Department> _departments = [];
   bool _isLoading = true;
   String? _error;
+  bool _showInactive = false;
 
   @override
   void initState() {
@@ -24,14 +27,27 @@ class _DepartmentManagementScreenState
     _loadDepartments();
   }
 
+  @override
+  void dispose() {
+    // ✅ Ensure proper cleanup to prevent memory leaks
+    super.dispose();
+  }
+
   Future<void> _loadDepartments() async {
+    // ✅ Check mounted before initial setState
+    if (!mounted) return;
+    
     setState(() {
       _isLoading = true;
       _error = null;
     });
 
     try {
-      final response = await _service.getDepartments();
+      final response = await _service.getAllDepartments(includeInactive: _showInactive);
+      
+      // ✅ Check mounted after async call
+      if (!mounted) return;
+      
       if (response.success && response.data != null) {
         setState(() {
           _departments = response.data!;
@@ -42,14 +58,274 @@ class _DepartmentManagementScreenState
         });
       }
     } catch (e) {
+      // ✅ Check mounted after error
+      if (!mounted) return;
+      
       setState(() {
         _error = 'Lỗi: ${e.toString()}';
       });
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      // ✅ Check mounted before final setState
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
+  }
+
+  Future<void> _handleCreateOrUpdateDepartment(bool isEdit, Department? department, String name, String description) async {
+    if (!mounted) return;
+    
+    try {
+      if (isEdit && department != null) {
+        // Update existing department
+        final request = UpdateDepartmentInfoRequest(
+          name: name,
+          description: description.isNotEmpty ? description : null,
+        );
+        
+        final response = await _service.updateDepartment(department.id, request);
+        
+        if (!mounted) return;
+        
+        if (response.success && response.data != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ ${response.data!.message}'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          await _loadDepartments(); // Refresh list
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('❌ ${response.message}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } else {
+        // Create new department
+        final request = CreateDepartmentRequest(
+          code: _generateDepartmentCode(name),
+          name: name,
+          description: description.isNotEmpty ? description : null,
+        );
+        
+        final response = await _service.createDepartment(request);
+        
+        if (!mounted) return;
+        
+        if (response.success && response.data != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ ${response.data!.message}'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          await _loadDepartments(); // Refresh list
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('❌ ${response.message}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Lỗi: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleDeleteDepartment(Department department) async {
+    if (!mounted) return;
+    
+    try {
+      final response = await _service.deleteDepartment(
+        department.id, 
+        reason: 'Xóa từ giao diện quản lý - ${VietnamTimeZone.formatDateTime(VietnamTimeZone.now())}',
+      );
+      
+      if (!mounted) return;
+      
+      if (response.success && response.data != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ ${response.data!.message}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        await _loadDepartments(); // Refresh list
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ ${response.message}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Lỗi: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  String _generateDepartmentCode(String name) {
+    // Simple department code generation from name
+    final words = name.toUpperCase().split(' ');
+    if (words.length >= 2) {
+      return words.take(2).map((w) => w.isNotEmpty ? w[0] : '').join('');
+    } else if (words.isNotEmpty && words[0].length >= 3) {
+      return words[0].substring(0, 3);
+    } else {
+      return 'DEPT';
+    }
+  }
+
+  Future<void> _restoreDepartment(Department department) async {
+    if (!mounted) return;
+    
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.restore, color: Colors.green, size: 24),
+            ),
+            const SizedBox(width: 16),
+            const Expanded(
+              child: Text(
+                'Khôi phục phòng ban',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Bạn có muốn khôi phục phòng ban "${department.name}" không?',
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF64748B),
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.green, size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Phòng ban sẽ được kích hoạt lại và có thể sử dụng bình thường.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.green,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text(
+              'Hủy',
+              style: TextStyle(color: Color(0xFF64748B)),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Khôi phục'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      try {
+        final response = await _service.restoreDepartment(
+          department.id,
+          reason: 'Khôi phục từ giao diện quản lý - ${VietnamTimeZone.formatDateTime(VietnamTimeZone.now())}',
+        );
+        
+        if (!mounted) return;
+        
+        if (response.success && response.data != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ ${response.data!.message}'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          await _loadDepartments(); // Refresh list
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('❌ ${response.message}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } catch (e) {
+        if (!mounted) return;
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Lỗi: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+
   }
 
   Future<void> _showDepartmentDialog({Department? department}) async {
@@ -201,6 +477,9 @@ class _DepartmentManagementScreenState
           ),
           ElevatedButton(
             onPressed: () {
+              // ✅ Unfocus to prevent controller access after dispose
+              FocusScope.of(context).unfocus();
+              
               if (nameController.text.trim().isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -250,21 +529,21 @@ class _DepartmentManagementScreenState
       ),
     );
 
-    if (result == true && mounted) {
-      // TODO: Call API to create/update department
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            isEdit
-                ? 'Chức năng cập nhật sẽ được triển khai sau'
-                : 'Chức năng thêm mới sẽ được triển khai sau',
-          ),
-        ),
-      );
+    // ✅ Always dispose controllers in try-finally to prevent memory leaks
+    try {
+      // ✅ Process result only if widget is still mounted
+      if (result == true && mounted) {
+        await _handleCreateOrUpdateDepartment(isEdit, department, nameController.text, descController.text);
+      }
+    } finally {
+      // ✅ Ensure controllers are disposed safely 
+      try {
+        nameController.dispose();
+        descController.dispose();
+      } catch (e) {
+        // Ignore disposal errors
+      }
     }
-
-    nameController.dispose();
-    descController.dispose();
   }
 
   Future<void> _deleteDepartment(Department department) async {
@@ -290,10 +569,7 @@ class _DepartmentManagementScreenState
     );
 
     if (confirm == true && mounted) {
-      // TODO: Call API to delete department
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Chức năng xóa sẽ được triển khai sau')),
-      );
+      await _handleDeleteDepartment(department);
     }
   }
 
@@ -331,31 +607,69 @@ class _DepartmentManagementScreenState
               ),
             ),
             const SizedBox(width: 16),
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Quản Lý Phòng Ban',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF1E293B),
-                    letterSpacing: -0.3,
+            // ✅ Fix overflow: Wrap Column trong Expanded
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Quản Lý Phòng Ban',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF1E293B),
+                      letterSpacing: -0.3,
+                    ),
+                    overflow: TextOverflow.ellipsis, // ✅ Prevent text overflow
                   ),
-                ),
-                Text(
-                  'Tổ chức và phân chia phòng ban',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF64748B),
+                  Text(
+                    'Tổ chức và phân chia phòng ban',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF64748B),
+                    ),
+                    overflow: TextOverflow.ellipsis, // ✅ Prevent text overflow
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
         actions: [
+          // Toggle để hiển thị departments inactive
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Inactive',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Switch(
+                  value: _showInactive,
+                  onChanged: (value) {
+                    setState(() {
+                      _showInactive = value;
+                    });
+                    _loadDepartments();
+                  },
+                  activeColor: const Color(0xFF00BCD4),
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ],
+            ),
+          ),
           Container(
             margin: const EdgeInsets.only(right: 8),
             decoration: BoxDecoration(
@@ -597,7 +911,28 @@ class _DepartmentManagementScreenState
               ),
               child: const Icon(Icons.business, color: Colors.white, size: 28),
             ),
-            title: Text(department.name, style: AppTextStyles.h4),
+            title: Row(
+              children: [
+                Expanded(child: Text(department.name, style: AppTextStyles.h4)),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: department.isActive 
+                        ? Colors.green.withOpacity(0.1)
+                        : Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    department.isActive ? 'Hoạt động' : 'Ngừng hoạt động',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: department.isActive ? Colors.green : Colors.red,
+                    ),
+                  ),
+                ),
+              ],
+            ),
             subtitle: department.description != null
                 ? Padding(
                     padding: const EdgeInsets.only(top: 8),
@@ -618,30 +953,46 @@ class _DepartmentManagementScreenState
                   case 'delete':
                     _deleteDepartment(department);
                     break;
+                  case 'restore':
+                    _restoreDepartment(department);
+                    break;
                 }
               },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'edit',
-                  child: Row(
-                    children: [
-                      Icon(Icons.edit, size: 20),
-                      SizedBox(width: 12),
-                      Text('Chỉnh sửa'),
+              itemBuilder: (context) => department.isActive
+                  ? [
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit, size: 20),
+                            SizedBox(width: 12),
+                            Text('Chỉnh sửa'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete, color: Colors.red, size: 20),
+                            SizedBox(width: 12),
+                            Text('Xóa', style: TextStyle(color: Colors.red)),
+                          ],
+                        ),
+                      ),
+                    ]
+                  : [
+                      const PopupMenuItem(
+                        value: 'restore',
+                        child: Row(
+                          children: [
+                            Icon(Icons.restore, color: Colors.green, size: 20),
+                            SizedBox(width: 12),
+                            Text('Khôi phục', style: TextStyle(color: Colors.green)),
+                          ],
+                        ),
+                      ),
                     ],
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'delete',
-                  child: Row(
-                    children: [
-                      Icon(Icons.delete, color: Colors.red, size: 20),
-                      SizedBox(width: 12),
-                      Text('Xóa', style: TextStyle(color: Colors.red)),
-                    ],
-                  ),
-                ),
-              ],
             ),
           ),
           // Employee Count (can be added later)
@@ -689,6 +1040,7 @@ class _DepartmentManagementScreenState
   }
 
   String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
+    // ✅ Use Vietnam timezone for consistent date formatting
+    return VietnamTimeZone.formatDate(date);
   }
 }

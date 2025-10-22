@@ -339,6 +339,19 @@ class HomeScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     _buildModernFeatureCard(
                       context,
+                      icon: Icons.edit_calendar_rounded,
+                      title: 'Chấm Công Thủ Công',
+                      subtitle: 'HR/Quản lý chấm công hàng loạt',
+                      gradientColors: [
+                        const Color(0xFF667eea),
+                        const Color(0xFF764ba2),
+                      ],
+                      onTap: () =>
+                          Navigator.pushNamed(context, '/attendance/manual'),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildModernFeatureCard(
+                      context,
                       icon: Icons.attach_money_rounded,
                       title: 'Quản Lý Lương',
                       subtitle: 'Tính toán và quản lý lương nhân viên',

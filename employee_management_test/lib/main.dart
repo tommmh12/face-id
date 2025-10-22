@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -16,6 +17,7 @@ import 'screens/employee/employee_management_hub_screen.dart';
 import 'screens/department/department_management_screen.dart';
 import 'screens/face/face_register_screen.dart';
 import 'screens/face/face_checkin_screen.dart';
+import 'screens/attendance/manual_attendance_screen.dart';
 import 'screens/payroll/payroll_dashboard_screen.dart';
 import 'screens/payroll/payroll_report_screen.dart';
 import 'screens/payroll/payroll_rule_setup_screen.dart';
@@ -25,7 +27,10 @@ import 'screens/payroll/employee_salary_detail_screen_v2.dart';
 import 'screens/payroll/payroll_chart_screen.dart';
 import 'screens/payroll/edit_base_salary_screen.dart';
 import 'screens/api_test_screen.dart';
+import 'screens/debug/timezone_debug_screen.dart';
 import 'services/loading_service.dart';
+import 'providers/employee_provider.dart';
+import 'providers/manual_attendance_provider.dart';
 import 'utils/camera_helper.dart';
 
 void main() async {
@@ -44,10 +49,14 @@ void main() async {
     debugPrint('Camera initialization failed: $e');
   }
 
-  // ✅ Setup Provider with LoadingService
+  // ✅ Setup MultiProvider with LoadingService and EmployeeProvider
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => LoadingService(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => LoadingService()),
+        ChangeNotifierProvider(create: (_) => EmployeeProvider()),
+        ChangeNotifierProvider(create: (_) => ManualAttendanceProvider()),
+      ],
       child: const MyApp(),
     ),
   );
@@ -61,6 +70,15 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Employee Management & Face ID',
       debugShowCheckedModeBanner: false,
+      localizationsDelegates: [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('vi', 'VN'),
+        Locale('en', 'US'),
+      ],
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF1E88E5),
@@ -259,9 +277,11 @@ class MyApp extends StatelessWidget {
         '/departments': (context) => const DepartmentManagementScreen(),
         '/face/register': (context) => const FaceRegisterScreen(),
         '/face/checkin': (context) => const FaceCheckinScreen(),
+        '/attendance/manual': (context) => const ManualAttendanceScreen(),
         '/payroll': (context) => const PayrollDashboardScreen(),
         '/payroll/chart': (context) => const PayrollChartScreen(),
         '/api-test': (context) => const ApiTestScreen(),
+        '/debug/timezone': (context) => const TimeZoneDebugScreen(),
       },
       onGenerateRoute: (settings) {
         // Handle routes with parameters

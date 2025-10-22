@@ -331,50 +331,65 @@ class PayrollApiService extends BaseApiService {
 
   /// GET /api/payroll/records/period/{periodId}
   /// Lấy danh sách tất cả bảng lương nhân viên trong kỳ (REAL DATA)
-  /// ✅ FIXED: Backend trả về object { period, records, totalRecords }, không phải array
+  /// ✅ FIXED: Parsing manually because response structure is unique
   Future<ApiResponse<PayrollRecordsListResponse>> getPayrollRecords(int periodId) async {
-    AppLogger.apiRequest('$_endpoint/records/period/$periodId', method: 'GET');
-    
+    final String path = '$_endpoint/records/period/$periodId';
+    AppLogger.apiRequest(path, method: 'GET');
+
     try {
-      // Get raw HTTP response first for debugging
+      // 1. Gọi HTTP trực tiếp
       final httpResponse = await CustomHttpClient.get(
-        Uri.parse('${ApiConfig.baseUrl}$_endpoint/records/period/$periodId'),
-        headers: await ApiConfig.getAuthenticatedHeaders(), //  FIXED: Use auth headers
+        Uri.parse('${ApiConfig.baseUrl}$path'),
+        headers: await ApiConfig.getAuthenticatedHeaders(),
       );
-      
-      // 🔍 DEBUG: Log raw response body to see what backend actually returns
+
+      // 2. Log raw response (bạn đã làm)
       AppLogger.debug('Raw response body: ${httpResponse.body}', tag: 'PayrollAPI');
-      
-      // Now parse using handleRequest
-      final response = await handleRequest(
-        () => Future.value(httpResponse),
-        (json) => PayrollRecordsListResponse.fromJson(json),
-      );
-      
-      // 🔍 DEBUG: Log parsed data details
-      if (response.data != null) {
-        AppLogger.debug(
-          'Parsed data - records.length: ${response.data!.records.length}, totalRecords: ${response.data!.totalRecords}, periodName: ${response.data!.periodName ?? "null"}',
-          tag: 'PayrollAPI',
-        );
+
+      // 3. Decode JSON body
+      final jsonBody = json.decode(httpResponse.body) as Map<String, dynamic>;
+
+      // 4. Kiểm tra HTTP status (thay thế logic của handleRequest)
+      if (httpResponse.statusCode < 200 || httpResponse.statusCode >= 300) {
+        final message = jsonBody['message'] as String? ?? 'Lỗi HTTP ${httpResponse.statusCode}';
+        AppLogger.apiResponse(path, success: false, message: message);
+        return ApiResponse.error(message);
       }
       
+      // 5. Kiểm tra 'success' field của API (backend có thể trả về 200 nhưng success=false)
+      final bool apiSuccess = jsonBody['success'] as bool? ?? false;
+      final String apiMessage = jsonBody['message'] as String? ?? 'Không có tin nhắn';
+
+      if (!apiSuccess) {
+         // Vẫn trả về success=true cho ApiResponse, nhưng data chứa thông báo lỗi
+         // HOẶC trả về error tùy bạn muốn UI xử lý thế nào
+         AppLogger.warning('API returned success=false: $apiMessage', tag: 'PayrollAPI');
+      }
+
+      // 6. Parse TOÀN BỘ jsonBody (là một Map) bằng fromJson
+      // Đây là bước quan trọng, vì PayrollRecordsListResponse.fromJson nhận cả Map
+      final data = PayrollRecordsListResponse.fromJson(jsonBody);
+
       AppLogger.apiResponse(
-        '$_endpoint/records/period/$periodId',
-        success: response.success,
-        message: response.message,
-        data: response.data != null ? 'Records: ${response.data!.records.length}, Total: ${response.data!.totalRecords}' : null,
+        path,
+        success: true, // Yêu cầu HTTP thành công
+        message: apiMessage,
+        data: 'Records: ${data.records.length}, Total: ${data.totalRecords}',
       );
       
-      return response;
+      // Trả về ApiResponse thành công với dữ liệu đã parse
+      return ApiResponse.success(data, httpResponse.statusCode);
+
     } catch (e, stackTrace) {
+      // Bắt lỗi (ví dụ: lỗi parse JSON, lỗi mạng)
       AppLogger.error(
         'Failed to get payroll records',
         error: e,
         stackTrace: stackTrace,
         tag: 'PayrollAPI',
       );
-      return ApiResponse.error('Failed to get payroll records: $e');
+      // Đây là nở nơi lỗi "type cast" của bạn bị bắt
+      return ApiResponse.error('Lỗi phân tích dữ liệu: $e');
     }
   }
 

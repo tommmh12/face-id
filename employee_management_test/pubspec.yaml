@@ -30,6 +30,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
   # UI & Navigation
   cupertino_icons: ^1.0.8
@@ -44,6 +46,7 @@ dependencies:
   image: ^4.1.3
   flutter_image_compress: ^2.1.0  # ✅ For better image compression
   mime: ^1.0.4  # ✅ For MIME type validation
+  google_mlkit_face_detection: ^0.10.0  # ✅ For face detection
   
   # Storage & State Management
   shared_preferences: ^2.2.2
@@ -60,7 +63,7 @@ dependencies:
   path_provider: ^2.1.2
   
   # Utils
-  intl: ^0.18.1
+  intl: ^0.20.2
   uuid: ^4.1.0
   google_generative_ai: ^0.4.7
   flutter_dotenv: ^5.1.0

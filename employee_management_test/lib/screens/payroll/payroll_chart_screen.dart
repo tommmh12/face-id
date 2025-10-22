@@ -6,7 +6,6 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../utils/app_logger.dart';
 import '../../services/payroll_api_service.dart';
-import '../../services/api_service.dart';
 import '../../models/dto/payroll_dtos.dart';
 
 /// Màn hình phân tích và biểu đồ lương

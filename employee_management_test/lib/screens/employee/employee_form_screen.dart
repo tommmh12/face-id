@@ -63,7 +63,17 @@ class _EmployeeFormScreenState extends State<EmployeeFormScreen> {
       if (response.success && response.data != null && mounted) {
         setState(() {
           _departments = response.data!;
-          // Set default department if not in edit mode and not already set
+          
+          // Validate and fix _selectedDepartmentId
+          if (_selectedDepartmentId != null) {
+            // Check if selected department exists in the list
+            final exists = _departments.any((dept) => dept.id == _selectedDepartmentId);
+            if (!exists) {
+              _selectedDepartmentId = null; // Reset if not found
+            }
+          }
+          
+          // Set default department if not set and list is not empty
           if (_selectedDepartmentId == null && _departments.isNotEmpty) {
             _selectedDepartmentId = _departments.first.id;
           }
@@ -478,7 +488,9 @@ class _EmployeeFormScreenState extends State<EmployeeFormScreen> {
         boxShadow: AppShadows.small,
       ),
       child: DropdownButtonFormField<int>(
-        value: _selectedDepartmentId,
+        value: _departments.any((dept) => dept.id == _selectedDepartmentId) 
+            ? _selectedDepartmentId 
+            : null,
         decoration: const InputDecoration(
           labelText: 'Phòng ban',
           prefixIcon: Icon(Icons.business, color: AppColors.primaryBlue),
