@@ -567,6 +567,18 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           onTap: () => Navigator.pushNamed(context, '/payroll'),
                         ),
                         _buildMainFeatureCard(
+                          icon: Icons.edit_calendar_outlined,
+                          title: 'Chấm Công Thủ Công',
+                          subtitle: 'Nhập chấm công thủ công hàng loạt',
+                          color: const Color(0xFFFF5722),
+                          gradient: [
+                            const Color(0xFFFF5722),
+                            const Color(0xFFE64A19),
+                          ],
+                          onTap: () =>
+                              Navigator.pushNamed(context, '/attendance/manual'),
+                        ),
+                        _buildMainFeatureCard(
                           icon: Icons.analytics_outlined,
                           title: 'Báo Cáo & Thống Kê',
                           subtitle: 'Xem báo cáo và biểu đồ',
@@ -579,6 +591,83 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               Navigator.pushNamed(context, '/payroll/chart'),
                         ),
                       ],
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    // Quick Actions Section
+                    Container(
+                      width: double.infinity,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.flash_on,
+                                  color: Color(0xFF1E88E5),
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Thao Tác Nhanh',
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            height: 100,
+                            child: ListView(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              children: [
+                                _buildQuickActionCard(
+                                  icon: Icons.edit_calendar_outlined,
+                                  title: 'Chấm Công\nThủ Công',
+                                  color: const Color(0xFFFF5722),
+                                  onTap: () => Navigator.pushNamed(context, '/attendance/manual'),
+                                ),
+                                const SizedBox(width: 12),
+                                _buildQuickActionCard(
+                                  icon: Icons.person_add_outlined,
+                                  title: 'Thêm\nNhân Viên',
+                                  color: const Color(0xFF1E88E5),
+                                  onTap: () => Navigator.pushNamed(context, '/employees/add'),
+                                ),
+                                const SizedBox(width: 12),
+                                _buildQuickActionCard(
+                                  icon: Icons.face_retouching_natural,
+                                  title: 'Đăng Ký\nFace ID',
+                                  color: const Color(0xFF4CAF50),
+                                  onTap: () => Navigator.pushNamed(context, '/face/register'),
+                                ),
+                                const SizedBox(width: 12),
+                                _buildQuickActionCard(
+                                  icon: Icons.analytics_outlined,
+                                  title: 'Báo Cáo\nLương',
+                                  color: const Color(0xFF9C27B0),
+                                  onTap: () => Navigator.pushNamed(context, '/payroll/chart'),
+                                ),
+                                const SizedBox(width: 12),
+                                _buildQuickActionCard(
+                                  icon: Icons.business_center_outlined,
+                                  title: 'Thêm\nPhòng Ban',
+                                  color: const Color(0xFF00BCD4),
+                                  onTap: () => Navigator.pushNamed(context, '/departments/add'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
 
                     const SizedBox(height: 32),
@@ -759,8 +848,70 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ),
         ),
       ),
-      // ✅ TODO: Add Floating Action Button for Debug Access (Admin only)
-      // floatingActionButton: FloatingActionButton.extended(...),
+    );
+  }
+
+  Widget _buildQuickActionCard({
+    required IconData icon,
+    required String title,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      width: 120,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        border: Border.all(
+          color: color.withOpacity(0.1),
+          width: 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: color,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    height: 1.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
