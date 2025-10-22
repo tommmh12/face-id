@@ -100,4 +100,6 @@ class EmployeeApiService extends BaseApiService {
       (json) => VerifyEmployeeFaceResponse.fromJson(json),
     );
   }
+
+  updateEmployee(int id, CreateEmployeeRequest req) {}
 }

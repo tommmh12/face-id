@@ -6,7 +6,7 @@ import '../config/app_config.dart';
 
 /// Cấu hình chung cho API
 class ApiConfig {
-  static const String baseUrl = AppConfig.baseUrl;
+  static final String baseUrl = AppConfig.baseUrl;
 
   static const Map<String, String> headers = {
     'Content-Type': 'application/json',
