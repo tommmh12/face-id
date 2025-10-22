@@ -91,107 +91,241 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: const Color(0xFFF8FAFF),
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
-        title: const Text(
-          'Danh Sách Nhân Viên',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF1A1A1A),
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF1E88E5), Color(0xFF1976D2)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
           ),
         ),
-        iconTheme: const IconThemeData(color: Color(0xFF1A1A1A)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.people_alt_rounded,
+                color: Colors.white,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Nhân Viên',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
-          IconButton(
-            onPressed: _loadData,
-            icon: const Icon(Icons.refresh_rounded),
-            tooltip: 'Làm mới',
+          // Refresh button
+          Container(
+            margin: const EdgeInsets.only(right: 12),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: IconButton(
+              onPressed: _loadData,
+              icon: const Icon(
+                Icons.refresh_rounded,
+                color: Colors.white,
+                size: 22,
+              ),
+              tooltip: 'Làm mới',
+            ),
           ),
         ],
       ),
       body: Column(
         children: [
-          // Search Bar
+          // Compact Header Section with Search
           Container(
-            margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Tìm kiếm theo tên hoặc mã nhân viên...',
-                prefixIcon: const Icon(Icons.search_rounded, size: 22),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey[200]!),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF1E88E5), width: 2),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF1E88E5), Color(0xFF1976D2)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              onChanged: (value) {
-                // TODO: Implement search filter
-                setState(() {});
-              },
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(24),
+                bottomRight: Radius.circular(24),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Search Bar - Compact
+                  Container(
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: TextField(
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      decoration: InputDecoration(
+                        hintText: 'Tìm kiếm nhân viên...',
+                        hintStyle: TextStyle(
+                          color: Colors.white.withOpacity(0.7),
+                          fontSize: 14,
+                        ),
+                        prefixIcon: Icon(
+                          Icons.search_rounded,
+                          size: 20,
+                          color: Colors.white.withOpacity(0.8),
+                        ),
+                        filled: false,
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                      ),
+                      onChanged: (value) {
+                        // TODO: Implement search filter
+                        setState(() {});
+                      },
+                    ),
+                  ),
+
+                  // Compact Stats Row
+                  if (!_isLoading && _error == null) ...[
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildCompactStats(
+                            _employees.length.toString(),
+                            'Tổng',
+                            Icons.people_outline,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildCompactStats(
+                            _employees
+                                .where((e) => e.isFaceRegistered)
+                                .length
+                                .toString(),
+                            'Face ID',
+                            Icons.face_retouching_natural,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildCompactStats(
+                            _employees
+                                .where((e) => e.isActive)
+                                .length
+                                .toString(),
+                            'Hoạt động',
+                            Icons.check_circle_outline,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
 
           // Department Filter
           if (_departments.isNotEmpty)
             Container(
-              margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: DropdownButtonFormField<int?>(
-                value: _selectedDepartmentId,
-                decoration: const InputDecoration(
-                  labelText: 'Lọc theo phòng ban',
-                  border: InputBorder.none,
-                  prefixIcon: Icon(Icons.filter_list_rounded, size: 20),
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 12,
-                  ),
+              margin: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
                 ),
-                items: [
-                  const DropdownMenuItem<int?>(
-                    value: null,
-                    child: Text('Tất cả phòng ban'),
-                  ),
-                  ..._departments.map(
-                    (dept) => DropdownMenuItem<int?>(
-                      value: dept.id,
-                      child: Text(dept.name),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: DropdownButtonFormField<int?>(
+                  value: _selectedDepartmentId,
+                  decoration: InputDecoration(
+                    labelText: 'Lọc theo phòng ban',
+                    labelStyle: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    border: InputBorder.none,
+                    prefixIcon: Container(
+                      margin: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E88E5).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.filter_list_rounded,
+                        size: 16,
+                        color: Color(0xFF1E88E5),
+                      ),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
                     ),
                   ),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _selectedDepartmentId = value;
-                  });
-                  _loadEmployees();
-                },
+                  items: [
+                    const DropdownMenuItem<int?>(
+                      value: null,
+                      child: Text(
+                        'Tất cả phòng ban',
+                        style: TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                    ..._departments.map(
+                      (dept) => DropdownMenuItem<int?>(
+                        value: dept.id,
+                        child: Text(
+                          dept.name,
+                          style: const TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedDepartmentId = value;
+                    });
+                    _loadEmployees();
+                  },
+                ),
               ),
             ),
 
@@ -294,8 +428,10 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
                           const SizedBox(height: 24),
                           ElevatedButton.icon(
                             onPressed: () {
-                              Navigator.pushNamed(context, '/employee/create')
-                                  .then((_) => _loadData());
+                              Navigator.pushNamed(
+                                context,
+                                '/employee/create',
+                              ).then((_) => _loadData());
                             },
                             icon: const Icon(Icons.add),
                             label: const Text('Thêm nhân viên mới'),
@@ -311,25 +447,25 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
                     ),
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
                     itemCount: _employees.length,
                     itemBuilder: (context, index) {
                       final employee = _employees[index];
                       return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
+                        margin: const EdgeInsets.only(bottom: 16),
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: 15,
+                              offset: const Offset(0, 5),
                             ),
                           ],
                         ),
                         child: Material(
-                          color: Colors.transparent,
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
                           child: InkWell(
                             onTap: () {
                               Navigator.pushNamed(
@@ -338,47 +474,91 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
                                 arguments: {'employeeId': employee.id},
                               ).then((_) => _loadData());
                             },
-                            borderRadius: BorderRadius.circular(16),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: employee.isFaceRegistered
+                                      ? const Color(0xFF4CAF50).withOpacity(0.2)
+                                      : Colors.grey.withOpacity(0.1),
+                                  width: 1,
+                                ),
+                              ),
                               child: Row(
                                 children: [
-                                  // Avatar with status badge
+                                  // Enhanced Avatar with gradient and status
                                   Stack(
                                     children: [
                                       Container(
-                                        width: 56,
-                                        height: 56,
+                                        width: 64,
+                                        height: 64,
                                         decoration: BoxDecoration(
-                                          color: employee.isFaceRegistered
-                                              ? const Color(0xFFE8F5E9)
-                                              : const Color(0xFFF5F5F5),
+                                          gradient: employee.isFaceRegistered
+                                              ? const LinearGradient(
+                                                  colors: [
+                                                    Color(0xFF4CAF50),
+                                                    Color(0xFF43A047),
+                                                  ],
+                                                  begin: Alignment.topLeft,
+                                                  end: Alignment.bottomRight,
+                                                )
+                                              : LinearGradient(
+                                                  colors: [
+                                                    Colors.grey[300]!,
+                                                    Colors.grey[400]!,
+                                                  ],
+                                                  begin: Alignment.topLeft,
+                                                  end: Alignment.bottomRight,
+                                                ),
                                           shape: BoxShape.circle,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color:
+                                                  (employee.isFaceRegistered
+                                                          ? const Color(
+                                                              0xFF4CAF50,
+                                                            )
+                                                          : Colors.grey)
+                                                      .withOpacity(0.3),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 4),
+                                            ),
+                                          ],
                                         ),
                                         child: Icon(
                                           employee.isFaceRegistered
                                               ? Icons.face_retouching_natural
                                               : Icons.person_outline_rounded,
-                                          color: employee.isFaceRegistered
-                                              ? const Color(0xFF43A047)
-                                              : const Color(0xFF999999),
-                                          size: 28,
+                                          color: Colors.white,
+                                          size: 30,
                                         ),
                                       ),
                                       Positioned(
                                         right: 0,
                                         bottom: 0,
                                         child: Container(
-                                          width: 18,
-                                          height: 18,
+                                          width: 22,
+                                          height: 22,
                                           decoration: BoxDecoration(
-                                            color: employee.isActive
-                                                ? const Color(0xFF43A047)
-                                                : const Color(0xFFE53935),
+                                            gradient: employee.isActive
+                                                ? const LinearGradient(
+                                                    colors: [
+                                                      Color(0xFF4CAF50),
+                                                      Color(0xFF43A047),
+                                                    ],
+                                                  )
+                                                : const LinearGradient(
+                                                    colors: [
+                                                      Color(0xFFE53935),
+                                                      Color(0xFFD32F2F),
+                                                    ],
+                                                  ),
                                             shape: BoxShape.circle,
                                             border: Border.all(
                                               color: Colors.white,
-                                              width: 2,
+                                              width: 3,
                                             ),
                                           ),
                                           child: Icon(
@@ -386,14 +566,14 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
                                                 ? Icons.check
                                                 : Icons.close,
                                             color: Colors.white,
-                                            size: 10,
+                                            size: 12,
                                           ),
                                         ),
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(width: 16),
-                                  // Info
+                                  const SizedBox(width: 20),
+                                  // Enhanced Info Section
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:
@@ -402,14 +582,41 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
                                         Text(
                                           employee.fullName,
                                           style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w600,
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
                                             color: Color(0xFF1A1A1A),
                                           ),
                                         ),
-                                        const SizedBox(height: 4),
-                                        Row(
+                                        const SizedBox(height: 8),
+                                        Wrap(
+                                          spacing: 8,
+                                          runSpacing: 4,
                                           children: [
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 10,
+                                                    vertical: 4,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                gradient: const LinearGradient(
+                                                  colors: [
+                                                    Color(0xFF1E88E5),
+                                                    Color(0xFF1976D2),
+                                                  ],
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                              child: Text(
+                                                employee.employeeCode,
+                                                style: const TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ),
                                             Container(
                                               padding:
                                                   const EdgeInsets.symmetric(
@@ -417,28 +624,49 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
                                                     vertical: 2,
                                                   ),
                                               decoration: BoxDecoration(
-                                                color: const Color(0xFFE3F2FD),
+                                                color: employee.isActive
+                                                    ? const Color(
+                                                        0xFF4CAF50,
+                                                      ).withOpacity(0.1)
+                                                    : const Color(
+                                                        0xFFE53935,
+                                                      ).withOpacity(0.1),
                                                 borderRadius:
-                                                    BorderRadius.circular(4),
+                                                    BorderRadius.circular(6),
                                               ),
                                               child: Text(
-                                                employee.employeeCode,
-                                                style: const TextStyle(
-                                                  fontSize: 11,
+                                                employee.isActive
+                                                    ? 'Hoạt động'
+                                                    : 'Tạm dừng',
+                                                style: TextStyle(
+                                                  fontSize: 10,
                                                   fontWeight: FontWeight.w600,
-                                                  color: Color(0xFF1E88E5),
+                                                  color: employee.isActive
+                                                      ? const Color(0xFF4CAF50)
+                                                      : const Color(0xFFE53935),
                                                 ),
                                               ),
                                             ),
-                                            const SizedBox(width: 8),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              Icons.business_outlined,
+                                              size: 16,
+                                              color: Colors.grey[600],
+                                            ),
+                                            const SizedBox(width: 6),
                                             Flexible(
                                               child: Text(
                                                 _getDepartmentName(
                                                   employee.departmentId,
                                                 ),
-                                                style: const TextStyle(
-                                                  fontSize: 13,
-                                                  color: Color(0xFF666666),
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  color: Colors.grey[600],
+                                                  fontWeight: FontWeight.w500,
                                                 ),
                                                 overflow: TextOverflow.ellipsis,
                                               ),
@@ -449,18 +677,18 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
                                           const SizedBox(height: 4),
                                           Row(
                                             children: [
-                                              const Icon(
+                                              Icon(
                                                 Icons.work_outline_rounded,
-                                                size: 14,
-                                                color: Color(0xFF999999),
+                                                size: 16,
+                                                color: Colors.grey[600],
                                               ),
-                                              const SizedBox(width: 4),
+                                              const SizedBox(width: 6),
                                               Flexible(
                                                 child: Text(
                                                   employee.position!,
-                                                  style: const TextStyle(
-                                                    fontSize: 12,
-                                                    color: Color(0xFF999999),
+                                                  style: TextStyle(
+                                                    fontSize: 13,
+                                                    color: Colors.grey[600],
                                                   ),
                                                   overflow:
                                                       TextOverflow.ellipsis,
@@ -472,35 +700,87 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
                                       ],
                                     ),
                                   ),
-                                  // Actions
-                                  if (!employee.isFaceRegistered)
-                                    Container(
-                                      margin: const EdgeInsets.only(left: 8),
-                                      child: IconButton(
-                                        onPressed: () {
-                                          Navigator.pushNamed(
-                                            context,
-                                            '/face/register',
-                                            arguments: employee,
-                                          );
-                                        },
-                                        icon: const Icon(
-                                          Icons.face_retouching_natural,
-                                          color: Color(0xFF1E88E5),
-                                        ),
-                                        tooltip: 'Đăng ký Face ID',
-                                        style: IconButton.styleFrom(
-                                          backgroundColor: const Color(
-                                            0xFFE3F2FD,
+                                  // Enhanced Actions
+                                  Column(
+                                    children: [
+                                      if (!employee.isFaceRegistered)
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            gradient: const LinearGradient(
+                                              colors: [
+                                                Color(0xFF1E88E5),
+                                                Color(0xFF1976D2),
+                                              ],
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: const Color(
+                                                  0xFF1E88E5,
+                                                ).withOpacity(0.3),
+                                                blurRadius: 6,
+                                                offset: const Offset(0, 3),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Material(
+                                            color: Colors.transparent,
+                                            child: InkWell(
+                                              onTap: () {
+                                                Navigator.pushNamed(
+                                                  context,
+                                                  '/face/register',
+                                                  arguments: employee,
+                                                );
+                                              },
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              child: const Padding(
+                                                padding: EdgeInsets.all(10),
+                                                child: Icon(
+                                                  Icons.face_retouching_natural,
+                                                  color: Colors.white,
+                                                  size: 20,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        )
+                                      else
+                                        Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: const Color(
+                                              0xFF4CAF50,
+                                            ).withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                          child: const Icon(
+                                            Icons.verified,
+                                            color: Color(0xFF4CAF50),
+                                            size: 20,
                                           ),
                                         ),
+                                      const SizedBox(height: 12),
+                                      Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey[100],
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
+                                        ),
+                                        child: const Icon(
+                                          Icons.arrow_forward_ios_rounded,
+                                          size: 12,
+                                          color: Color(0xFF999999),
+                                        ),
                                       ),
-                                    ),
-                                  const SizedBox(width: 8),
-                                  const Icon(
-                                    Icons.arrow_forward_ios_rounded,
-                                    size: 16,
-                                    color: Color(0xFF999999),
+                                    ],
                                   ),
                                 ],
                               ),
@@ -513,16 +793,73 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.pushNamed(context, '/employee/create').then((_) {
-            _loadData();
-          });
-        },
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('Thêm NV'),
-        backgroundColor: const Color(0xFF1E88E5),
-        elevation: 4,
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF1E88E5), Color(0xFF1976D2)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(30),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF1E88E5).withOpacity(0.4),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: FloatingActionButton.extended(
+          onPressed: () {
+            Navigator.pushNamed(context, '/employee/create').then((_) {
+              _loadData();
+            });
+          },
+          icon: const Icon(Icons.add_rounded, color: Colors.white),
+          label: const Text(
+            'Thêm NV',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          ),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+        ),
+      ),
+    );
+  }
+
+  // Compact stats widget for header
+  Widget _buildCompactStats(String value, String label, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: Colors.white, size: 18),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.8),
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }
