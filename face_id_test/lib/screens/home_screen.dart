@@ -1,10 +1,16 @@
+import 'dart:async';
 import 'package:camera/camera.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../services/face_service.dart';
+import '../services/notification_service.dart';
+import '../services/loading_service.dart';
+import '../services/user_guidance_service.dart';
 import '../utils/image_utils.dart';
 import '../widgets/app_button.dart';
 import '../widgets/result_card.dart';
@@ -27,6 +33,39 @@ class _HomeScreenState extends State<HomeScreen> {
   final FaceService _faceService = FaceService();
   AttendanceResult? _lastResult;
   bool _isUploading = false;
+  int _todayCheckIns = 0;
+  int _todayCheckOuts = 0;
+  Timer? _clockTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTodayStats();
+  }
+
+  @override
+  void dispose() {
+    _clockTimer?.cancel();
+    super.dispose();
+  }
+
+  void _loadTodayStats() {
+    // Simulate loading today's stats
+    setState(() {
+      _todayCheckIns = 5;
+      _todayCheckOuts = 4;
+    });
+  }
+
+  void _updateStats(AttendanceAction action) {
+    setState(() {
+      if (action == AttendanceAction.checkIn) {
+        _todayCheckIns++;
+      } else {
+        _todayCheckOuts++;
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,6 +117,23 @@ class _HomeScreenState extends State<HomeScreen> {
                                   fontWeight: FontWeight.bold,
                                   color: colorScheme.onSurface,
                                 ),
+                              ),
+                              const SizedBox(height: 4),
+                              StreamBuilder<DateTime>(
+                                stream: Stream.periodic(
+                                  const Duration(seconds: 1),
+                                  (_) => DateTime.now(),
+                                ),
+                                builder: (context, snapshot) {
+                                  final now = snapshot.data ?? DateTime.now();
+                                  return Text(
+                                    DateFormat('EEEE, dd/MM/yyyy - HH:mm:ss').format(now),
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: colorScheme.onSurface.withOpacity(0.7),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  );
+                                },
                               ),
                               Text(
                                 'Attendance System',
@@ -173,20 +229,61 @@ class _HomeScreenState extends State<HomeScreen> {
                               ],
                             ),
                             const SizedBox(height: 20),
-                            AppButton(
-                              label: 'Check In',
-                              icon: AttendanceAction.checkIn.icon,
-                              onPressed: () => _handleAction(AttendanceAction.checkIn),
-                              enabled: !_isUploading,
-                              type: AttendanceAction.checkIn,
+                            
+                            // Today's Stats
+                            Container(
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: colorScheme.surface,
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildStatCard(
+                                      'Check In hôm nay',
+                                      _todayCheckIns.toString(),
+                                      Icons.login,
+                                      Colors.green.shade600,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: _buildStatCard(
+                                      'Check Out hôm nay',
+                                      _todayCheckOuts.toString(),
+                                      Icons.logout,
+                                      Colors.orange.shade600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            
+                            LoadingButton(
+                              text: 'Chấm công vào ca',
+                              onPressed: _isUploading ? null : () => _handleAction(AttendanceAction.checkIn),
+                              isLoading: _isUploading,
+                              backgroundColor: Colors.green.shade600,
+                              icon: Icons.login,
+                              width: double.infinity,
                             ),
                             const SizedBox(height: 16),
-                            AppButton(
-                              label: 'Check Out',
-                              icon: AttendanceAction.checkOut.icon,
-                              onPressed: () => _handleAction(AttendanceAction.checkOut),
-                              enabled: !_isUploading,
-                              type: AttendanceAction.checkOut,
+                            LoadingButton(
+                              text: 'Chấm công ra ca',
+                              onPressed: _isUploading ? null : () => _handleAction(AttendanceAction.checkOut),
+                              isLoading: _isUploading,
+                              backgroundColor: Colors.orange.shade600,
+                              icon: Icons.logout,
+                              width: double.infinity,
                             ),
                           ],
                         ),
@@ -251,23 +348,95 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-      floatingActionButton: _isUploading ? null : FloatingActionButton(
-        onPressed: () {
-          // Quick camera action
-          showModalBottomSheet(
-            context: context,
-            backgroundColor: Colors.transparent,
-            builder: (context) => _QuickActionSheet(
-              onCheckIn: () => _handleAction(AttendanceAction.checkIn),
-              onCheckOut: () => _handleAction(AttendanceAction.checkOut),
+      floatingActionButton: _isUploading 
+          ? null 
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                FloatingActionButton.small(
+                  heroTag: "tips",
+                  onPressed: () => UserGuidanceService.showTips(context),
+                  backgroundColor: Colors.amber.shade600,
+                  child: const Icon(Icons.lightbulb, color: Colors.white),
+                ),
+                const SizedBox(height: 8),
+                FloatingActionButton.small(
+                  heroTag: "help",
+                  onPressed: () => UserGuidanceService.showFirstTimeHelp(context),
+                  backgroundColor: Colors.blue.shade600,
+                  child: const Icon(Icons.help, color: Colors.white),
+                ),
+                const SizedBox(height: 8),
+                FloatingActionButton(
+                  heroTag: "camera",
+                  onPressed: () {
+                    // Quick camera action
+                    showModalBottomSheet(
+                      context: context,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => _QuickActionSheet(
+                        onCheckIn: () => _handleAction(AttendanceAction.checkIn),
+                        onCheckOut: () => _handleAction(AttendanceAction.checkOut),
+                      ),
+                    );
+                  },
+                  backgroundColor: colorScheme.primary,
+                  child: Icon(
+                    Icons.camera_alt,
+                    color: colorScheme.onPrimary,
+                  ),
+                ),
+              ],
             ),
-          );
-        },
-        backgroundColor: colorScheme.primary,
-        child: Icon(
-          Icons.camera_alt,
-          color: colorScheme.onPrimary,
+
+    );
+  }
+
+  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: color.withOpacity(0.2),
+          width: 1,
         ),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              color: color.withOpacity(0.8),
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
@@ -325,26 +494,48 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     try {
-      final data = await _faceService.verify(action.endpoint, base64Image);
-      final bool success = data['success'] == true;
-      final num? confidenceValue = data['confidence'] as num?;
-      final Map<String, dynamic>? matchedEmployee =
-          data['matchedEmployee'] is Map<String, dynamic> ? data['matchedEmployee'] as Map<String, dynamic> : null;
-
+      final verificationResult = await _faceService.verify(action.endpoint, base64Image);
+      
       final AttendanceResult result = AttendanceResult(
         actionLabel: action.buttonLabel,
-        success: success,
-        status: (data['status'] as String?) ?? '',
-        message: (data['message'] as String?) ?? (success ? 'Verification completed.' : 'Verification failed.'),
-        employeeName: matchedEmployee?['fullName'] as String?,
-        confidence: confidenceValue?.toDouble(),
-        timestamp: DateTime.now(),
+        success: verificationResult.success,
+        status: verificationResult.success ? 'Thành công' : 'Thất bại',
+        message: verificationResult.detailedMessage,
+        employeeName: verificationResult.employeeName,
+        confidence: null, // Có thể thêm nếu API hỗ trợ
+        timestamp: verificationResult.timestamp,
       );
 
       if (!mounted) return;
 
       // Close loading dialog
       Navigator.of(context).pop();
+
+      // Show notification based on result
+      if (result.success) {
+        NotificationService.showSuccess(
+          context,
+          '${action.buttonLabel} thành công!',
+          subtitle: result.employeeName != null 
+            ? 'Chào mừng ${result.employeeName}!' 
+            : 'Chấm công đã được ghi nhận',
+        );
+        
+        // Haptic feedback for success
+        HapticFeedback.lightImpact();
+        
+        // Update statistics
+        _updateStats(action);
+      } else {
+        NotificationService.showError(
+          context,
+          '${action.buttonLabel} thất bại',
+          subtitle: result.message,
+        );
+        
+        // Haptic feedback for error  
+        HapticFeedback.heavyImpact();
+      }
 
       // Show result dialog
       await showDialog(
@@ -359,6 +550,13 @@ class _HomeScreenState extends State<HomeScreen> {
     } on DioException catch (_) {
       if (mounted) {
         Navigator.of(context).pop(); // Close loading dialog
+        
+        NotificationService.showError(
+          context,
+          'Lỗi kết nối',
+          subtitle: 'Không thể kết nối đến máy chủ. Vui lòng thử lại.',
+        );
+        
         _showErrorDialog('⚠️ Server unreachable, please retry');
       }
     } catch (_) {
