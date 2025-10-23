@@ -19,8 +19,12 @@ class EmployeeDetailScreen extends StatefulWidget {
 class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
   final EmployeeApiService _employeeService = EmployeeApiService();
   final PayrollApiService _payrollService = PayrollApiService();
-  final _currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: '₫', decimalDigits: 0);
-  
+  final _currencyFormat = NumberFormat.currency(
+    locale: 'vi_VN',
+    symbol: '₫',
+    decimalDigits: 0,
+  );
+
   Employee? _employee;
   List<SalaryAdjustmentResponse> _salaryAdjustments = [];
   PayrollRecordResponse? _currentPayroll;
@@ -33,8 +37,10 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
   String _safeCurrencyFormat(dynamic value) {
     try {
       if (value == null) return '₫0';
-      
-      final double amount = value is double ? value : double.tryParse(value.toString()) ?? 0.0;
+
+      final double amount = value is double
+          ? value
+          : double.tryParse(value.toString()) ?? 0.0;
       return _currencyFormat.format(amount);
     } catch (e) {
       debugPrint('Currency format error: $e');
@@ -49,34 +55,59 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
   }
 
   Future<void> _loadEmployeeDetails() async {
+    if (!mounted) return;
+
+    print(
+      '🔍 [EmployeeDetail] Loading employee details for ID: ${widget.employeeId}',
+    );
+
     setState(() {
       _isLoading = true;
       _error = null;
     });
 
     try {
+      print('📡 [EmployeeDetail] Calling getEmployeeById API...');
       final response = await _employeeService.getEmployeeById(
         widget.employeeId,
       );
 
+      print('📥 [EmployeeDetail] API Response received:');
+      print('   Success: ${response.success}');
+      print('   Message: ${response.message}');
+      print('   Data: ${response.data?.toJson()}');
+
+      if (!mounted) return;
+
       if (response.success && response.data != null) {
+        print(
+          '✅ [EmployeeDetail] Employee loaded successfully: ${response.data!.fullName}',
+        );
         setState(() {
           _employee = response.data!;
         });
-        
+
         // Load salary adjustments and current payroll after employee data is loaded
         await _loadSalaryAdjustments();
         await _loadCurrentPayroll();
       } else {
+        print(
+          '❌ [EmployeeDetail] Failed to load employee: ${response.message}',
+        );
+        if (!mounted) return;
         setState(() {
           _error = response.message ?? 'Không thể tải thông tin nhân viên';
         });
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('❌ [EmployeeDetail] Exception: $e');
+      print('Stack trace: $stackTrace');
+      if (!mounted) return;
       setState(() {
         _error = 'Lỗi: ${e.toString()}';
       });
     } finally {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
       });
@@ -201,14 +232,16 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
 
   Future<void> _loadSalaryAdjustments() async {
     if (_employee == null) return;
-    
+
     setState(() {
       _isLoadingAdjustments = true;
     });
 
     try {
-      final response = await _payrollService.getEmployeeAdjustments(widget.employeeId);
-      
+      final response = await _payrollService.getEmployeeAdjustments(
+        widget.employeeId,
+      );
+
       if (response.success && response.data != null) {
         setState(() {
           _salaryAdjustments = response.data!;
@@ -225,8 +258,8 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
   }
 
   Future<void> _loadCurrentPayroll() async {
-    if (_employee == null) return;
-    
+    if (_employee == null || !mounted) return;
+
     setState(() {
       _isLoadingPayroll = true;
     });
@@ -234,8 +267,13 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
     try {
       // Get current period (assume period ID = 1 for now)
       // TODO: Get actual current period from API
-      final response = await _payrollService.getEmployeePayroll(1, widget.employeeId);
-      
+      final response = await _payrollService.getEmployeePayroll(
+        1,
+        widget.employeeId,
+      );
+
+      if (!mounted) return;
+
       if (response.success && response.data != null) {
         setState(() {
           _currentPayroll = response.data!;
@@ -248,7 +286,7 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
       // Silent error for payroll - không ảnh hưởng đến thông tin chính
       debugPrint('Failed to load current payroll: $e');
       debugPrint('Stack trace: $stackTrace');
-      
+
       // Optionally show a user-friendly message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -260,9 +298,11 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
         );
       }
     } finally {
-      setState(() {
-        _isLoadingPayroll = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoadingPayroll = false;
+        });
+      }
     }
   }
 
@@ -380,7 +420,7 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
     } catch (e, stackTrace) {
       debugPrint('Error building body: $e');
       debugPrint('Stack trace: $stackTrace');
-      
+
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -509,12 +549,12 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
 
           // 💰 Current Salary Information Section
           _buildCurrentSalarySection(),
-          
+
           const SizedBox(height: AppSpacing.lg),
 
           // 💰 Salary Adjustments Section
           _buildSalaryAdjustmentsSection(),
-          
+
           const SizedBox(height: AppSpacing.lg),
 
           _buildSection(
@@ -615,7 +655,9 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
           const SizedBox(height: AppSpacing.lg),
           // Name
           Text(
-            _employee!.fullName.isNotEmpty ? _employee!.fullName : 'Chưa có tên',
+            _employee!.fullName.isNotEmpty
+                ? _employee!.fullName
+                : 'Chưa có tên',
             style: const TextStyle(
               color: Colors.white,
               fontSize: 26,
@@ -633,7 +675,9 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
-              _employee!.employeeCode.isNotEmpty ? _employee!.employeeCode : 'EMP${_employee!.id}',
+              _employee!.employeeCode.isNotEmpty
+                  ? _employee!.employeeCode
+                  : 'EMP${_employee!.id}',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 13,
@@ -784,7 +828,7 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
     );
   }
 
-  /// 💰 CURRENT SALARY INFORMATION SECTION  
+  /// 💰 CURRENT SALARY INFORMATION SECTION
   Widget _buildCurrentSalarySection() {
     return _buildSection(
       title: '💰 Thông tin lương hiện tại',
@@ -808,12 +852,19 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.info_outline, color: Colors.orange.shade600, size: 20),
+                    Icon(
+                      Icons.info_outline,
+                      color: Colors.orange.shade600,
+                      size: 20,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Chưa có dữ liệu lương cho kỳ hiện tại.',
-                        style: TextStyle(color: Colors.orange.shade700, fontSize: 14),
+                        style: TextStyle(
+                          color: Colors.orange.shade700,
+                          fontSize: 14,
+                        ),
                       ),
                     ),
                   ],
@@ -846,23 +897,24 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
   /// 📊 Salary Overview Card
   Widget _buildSalaryOverviewCard() {
     if (_currentPayroll == null) return const SizedBox();
-    
+
     final isNegative = _currentPayroll!.netSalary < 0;
-    
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: isNegative 
-            ? [Colors.red.shade400, Colors.red.shade600]
-            : [AppColors.primaryBlue, Colors.blue.shade700],
+          colors: isNegative
+              ? [Colors.red.shade400, Colors.red.shade600]
+              : [AppColors.primaryBlue, Colors.blue.shade700],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: (isNegative ? Colors.red : AppColors.primaryBlue).withOpacity(0.3),
+            color: (isNegative ? Colors.red : AppColors.primaryBlue)
+                .withOpacity(0.3),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -874,7 +926,11 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (isNegative) ...[
-                const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 24),
+                const Icon(
+                  Icons.warning_amber_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
                 const SizedBox(width: 8),
               ],
               const Text(
@@ -917,7 +973,7 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
   /// 📋 Salary Breakdown
   Widget _buildSalaryBreakdown() {
     if (_currentPayroll == null) return const SizedBox();
-    
+
     return Column(
       children: [
         // Income section
@@ -933,7 +989,11 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.add_circle, color: Colors.green.shade600, size: 20),
+                  Icon(
+                    Icons.add_circle,
+                    color: Colors.green.shade600,
+                    size: 20,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     'Thu nhập',
@@ -946,13 +1006,19 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                 ],
               ),
               const SizedBox(height: 12),
-              _buildSalaryInfoRow('Lương cơ bản', _currentPayroll!.baseSalaryActual),
-              _buildSalaryInfoRow('Thu nhập OT', _currentPayroll!.totalOTPayment),
+              _buildSalaryInfoRow(
+                'Lương cơ bản',
+                _currentPayroll!.baseSalaryActual,
+              ),
+              _buildSalaryInfoRow(
+                'Thu nhập OT',
+                _currentPayroll!.totalOTPayment,
+              ),
               _buildSalaryInfoRow('Phụ cấp', _currentPayroll!.totalAllowances),
               _buildSalaryInfoRow('Thưởng', _currentPayroll!.bonus),
               const Divider(),
               _buildSalaryInfoRow(
-                'Tổng thu nhập', 
+                'Tổng thu nhập',
                 _currentPayroll!.adjustedGrossIncome,
                 isBold: true,
                 color: Colors.green.shade700,
@@ -960,10 +1026,10 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
             ],
           ),
         ),
-        
+
         const SizedBox(height: 12),
-        
-        // Deduction section  
+
+        // Deduction section
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -976,7 +1042,11 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.remove_circle, color: Colors.red.shade600, size: 20),
+                  Icon(
+                    Icons.remove_circle,
+                    color: Colors.red.shade600,
+                    size: 20,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     'Khấu trừ',
@@ -989,13 +1059,21 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                 ],
               ),
               const SizedBox(height: 12),
-              _buildSalaryInfoRow('Bảo hiểm XH/YT/TN', _currentPayroll!.insuranceDeduction),
+              _buildSalaryInfoRow(
+                'Bảo hiểm XH/YT/TN',
+                _currentPayroll!.insuranceDeduction,
+              ),
               _buildSalaryInfoRow('Thuế TNCN', _currentPayroll!.pitDeduction),
-              _buildSalaryInfoRow('Khấu trừ khác', _currentPayroll!.otherDeductions),
+              _buildSalaryInfoRow(
+                'Khấu trừ khác',
+                _currentPayroll!.otherDeductions,
+              ),
               const Divider(),
               _buildSalaryInfoRow(
-                'Tổng khấu trừ', 
-                _currentPayroll!.insuranceDeduction + _currentPayroll!.pitDeduction + _currentPayroll!.otherDeductions,
+                'Tổng khấu trừ',
+                _currentPayroll!.insuranceDeduction +
+                    _currentPayroll!.pitDeduction +
+                    _currentPayroll!.otherDeductions,
                 isBold: true,
                 color: Colors.red.shade700,
               ),
@@ -1006,7 +1084,12 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
     );
   }
 
-  Widget _buildSalaryInfoRow(String label, double value, {bool isBold = false, Color? color}) {
+  Widget _buildSalaryInfoRow(
+    String label,
+    double value, {
+    bool isBold = false,
+    Color? color,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -1046,29 +1129,44 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () => _showAddAdjustmentDialog(type: 'BONUS'),
-                      icon: const Icon(Icons.star_rounded, color: Colors.green, size: 16),
+                      icon: const Icon(
+                        Icons.star_rounded,
+                        color: Colors.green,
+                        size: 16,
+                      ),
                       label: const Text(
                         'Thưởng',
                         style: TextStyle(color: Colors.green, fontSize: 12),
                       ),
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Colors.green),
-                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 8,
+                          horizontal: 8,
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () => _showAddAdjustmentDialog(type: 'PENALTY'),
-                      icon: const Icon(Icons.warning_rounded, color: Colors.red, size: 16),
+                      onPressed: () =>
+                          _showAddAdjustmentDialog(type: 'PENALTY'),
+                      icon: const Icon(
+                        Icons.warning_rounded,
+                        color: Colors.red,
+                        size: 16,
+                      ),
                       label: const Text(
                         'Phạt',
                         style: TextStyle(color: Colors.red, fontSize: 12),
                       ),
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Colors.red),
-                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 8,
+                          horizontal: 8,
+                        ),
                       ),
                     ),
                   ),
@@ -1094,7 +1192,10 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                     );
                   },
                   icon: const Icon(Icons.visibility_rounded, size: 16),
-                  label: const Text('Xem chi tiết', style: TextStyle(fontSize: 12)),
+                  label: const Text(
+                    'Xem chi tiết',
+                    style: TextStyle(fontSize: 12),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryBlue,
                     foregroundColor: Colors.white,
@@ -1105,7 +1206,7 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
             ],
           );
         }
-        
+
         // Màn hình lớn, hiển thị theo hàng
         return Row(
           children: [
@@ -1204,9 +1305,10 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
           ),
         ] else ...[
           // Adjustments List
-          ...(_salaryAdjustments.take(5).map((adjustment) => 
-            _buildAdjustmentCard(adjustment))),
-          
+          ...(_salaryAdjustments
+              .take(5)
+              .map((adjustment) => _buildAdjustmentCard(adjustment))),
+
           if (_salaryAdjustments.length > 5) ...[
             const SizedBox(height: 8),
             TextButton.icon(
@@ -1214,7 +1316,9 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                 // TODO: Navigate to full adjustments list
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Showing ${_salaryAdjustments.length} adjustments'),
+                    content: Text(
+                      'Showing ${_salaryAdjustments.length} adjustments',
+                    ),
                     duration: const Duration(seconds: 2),
                   ),
                 );
@@ -1255,9 +1359,9 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                 size: 16,
               ),
             ),
-            
+
             const SizedBox(width: 8),
-            
+
             // Content - Flexible để tránh overflow
             Expanded(
               child: Column(
@@ -1295,7 +1399,9 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                   const SizedBox(height: 2),
                   // Description
                   Text(
-                    adjustment.description.isNotEmpty ? adjustment.description : 'Không có mô tả',
+                    adjustment.description.isNotEmpty
+                        ? adjustment.description
+                        : 'Không có mô tả',
                     style: const TextStyle(fontSize: 11, color: Colors.black87),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -1306,22 +1412,33 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                     children: [
                       Flexible(
                         child: Text(
-                          DateFormat('dd/MM/yyyy').format(adjustment.effectiveDate),
-                          style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+                          DateFormat(
+                            'dd/MM/yyyy',
+                          ).format(adjustment.effectiveDate),
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.grey.shade600,
+                          ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       if (!adjustment.canEdit) ...[
                         const SizedBox(width: 4),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 1,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.grey.shade300,
                             borderRadius: BorderRadius.circular(3),
                           ),
                           child: const Text(
                             'Đã xử lý',
-                            style: TextStyle(fontSize: 8, color: Colors.black54),
+                            style: TextStyle(
+                              fontSize: 8,
+                              color: Colors.black54,
+                            ),
                           ),
                         ),
                       ],
@@ -1330,7 +1447,7 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                 ],
               ),
             ),
-            
+
             // Edit Button - Fixed width
             if (adjustment.canEdit) ...[
               const SizedBox(width: 4),
@@ -1410,18 +1527,18 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
   void _showAddAdjustmentDialog({String type = 'BONUS'}) {
     final reasonController = TextEditingController();
     final amountController = TextEditingController();
-    
+
     final isBonus = type.toUpperCase() == 'BONUS';
     final typeName = isBonus ? 'thưởng' : 'phạt';
     final typeColor = isBonus ? Colors.green : Colors.red;
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Row(
           children: [
             Icon(
-              isBonus ? Icons.star_rounded : Icons.warning_rounded, 
+              isBonus ? Icons.star_rounded : Icons.warning_rounded,
               color: typeColor,
               size: 24,
             ),
@@ -1461,7 +1578,9 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              final amount = double.tryParse(amountController.text.replaceAll(',', '')) ?? 0;
+              final amount =
+                  double.tryParse(amountController.text.replaceAll(',', '')) ??
+                  0;
               if (reasonController.text.isEmpty || amount <= 0) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -1478,9 +1597,8 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
               showDialog(
                 context: context,
                 barrierDismissible: false,
-                builder: (context) => const Center(
-                  child: CircularProgressIndicator(),
-                ),
+                builder: (context) =>
+                    const Center(child: CircularProgressIndicator()),
               );
 
               try {
@@ -1494,7 +1612,9 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                   approvedBy: 'HR', // TODO: Get from auth
                 );
 
-                final response = await _payrollService.createSalaryAdjustment(request);
+                final response = await _payrollService.createSalaryAdjustment(
+                  request,
+                );
 
                 // Close loading
                 if (mounted) Navigator.pop(context);
@@ -1513,13 +1633,15 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                       duration: const Duration(seconds: 3),
                     ),
                   );
-                  
+
                   // Reload data
                   _loadEmployeeDetails();
                 } else if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Lỗi: ${response.message ?? "Không thể thêm $typeName"}'),
+                      content: Text(
+                        'Lỗi: ${response.message ?? "Không thể thêm $typeName"}',
+                      ),
                       backgroundColor: Colors.red,
                     ),
                   );
@@ -1527,7 +1649,7 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
               } catch (e) {
                 // Close loading
                 if (mounted) Navigator.pop(context);
-                
+
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(

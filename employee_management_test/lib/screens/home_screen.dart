@@ -53,7 +53,7 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  'Chấm công • Tính lương tự động',
+                  'Chấm công tự động',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
@@ -182,7 +182,7 @@ class HomeScreen extends StatelessWidget {
                           ),
                           SizedBox(width: 8),
                           Text(
-                            'Chấm công • Tính lương tự động',
+                            'Chấm công tự động',
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.white,

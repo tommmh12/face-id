@@ -355,41 +355,6 @@ class _DepartmentManagementScreenState
             ),
           ],
         ),
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.refresh_rounded),
-              onPressed: _loadDepartments,
-              tooltip: 'Tải lại',
-              color: const Color(0xFF64748B),
-            ),
-          ),
-          Container(
-            margin: const EdgeInsets.only(right: 16, left: 8),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF00BCD4), Color(0xFF00ACC1)],
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: () => _showDepartmentDialog(),
-                child: const Padding(
-                  padding: EdgeInsets.all(12),
-                  child: Icon(Icons.add_rounded, color: Colors.white, size: 24),
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
       body: _buildBody(),
       floatingActionButton: Container(

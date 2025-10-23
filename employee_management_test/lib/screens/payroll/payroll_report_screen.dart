@@ -8,7 +8,7 @@ import 'employee_salary_detail_screen_v2.dart';
 import 'employee_hr_profile_screen.dart';
 
 /// 📊 Payroll Report Screen - Detailed Employee Payroll Table
-/// 
+///
 /// Features:
 /// - DataTable with employee payroll breakdown
 /// - Filter by department, position
@@ -18,11 +18,8 @@ import 'employee_hr_profile_screen.dart';
 /// - Individual employee detail view
 class PayrollReportScreen extends StatefulWidget {
   final int periodId;
-  
-  const PayrollReportScreen({
-    super.key,
-    required this.periodId,
-  });
+
+  const PayrollReportScreen({super.key, required this.periodId});
 
   @override
   State<PayrollReportScreen> createState() => _PayrollReportScreenState();
@@ -30,17 +27,21 @@ class PayrollReportScreen extends StatefulWidget {
 
 class _PayrollReportScreenState extends State<PayrollReportScreen> {
   final PayrollApiService _payrollService = PayrollApiService();
-  final _currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: '₫', decimalDigits: 0);
+  final _currencyFormat = NumberFormat.currency(
+    locale: 'vi_VN',
+    symbol: '₫',
+    decimalDigits: 0,
+  );
   final _searchController = TextEditingController();
-  
+
   PayrollPeriodResponse? _period;
   PayrollSummaryResponse? _summary;
   List<PayrollRecordResponse> _records = [];
   List<PayrollRecordResponse> _filteredRecords = [];
-  
+
   bool _isLoading = true;
   String? _error;
-  
+
   // Filters
   String? _selectedDepartment;
   String? _selectedPosition;
@@ -61,135 +62,175 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> {
   Future<void> _loadData() async {
     // ✅ Check mounted before setState
     if (!mounted) return;
-    
+
     setState(() {
       _isLoading = true;
       _error = null;
     });
 
     try {
-      AppLogger.startOperation('Load Payroll Report for Period ${widget.periodId}');
-      
+      AppLogger.startOperation(
+        'Load Payroll Report for Period ${widget.periodId}',
+      );
+
       // Load period info
-      final periodResponse = await _payrollService.getPayrollPeriodById(widget.periodId);
-      
+      final periodResponse = await _payrollService.getPayrollPeriodById(
+        widget.periodId,
+      );
+
       // ✅ Check mounted after async call
       if (!mounted) return;
-      
+
       if (periodResponse.success && periodResponse.data != null) {
         _period = periodResponse.data;
         AppLogger.data('Period: ${_period!.periodName}', tag: 'PayrollReport');
       } else {
         // Handle period load failure gracefully
-        AppLogger.warning('Could not load period info: ${periodResponse.message}', tag: 'PayrollReport');
+        AppLogger.warning(
+          'Could not load period info: ${periodResponse.message}',
+          tag: 'PayrollReport',
+        );
       }
-      
+
       // Load summary
-      final summaryResponse = await _payrollService.getPayrollSummary(widget.periodId);
-      
+      final summaryResponse = await _payrollService.getPayrollSummary(
+        widget.periodId,
+      );
+
       // ✅ Check mounted after async call
       if (!mounted) return;
-      
+
       if (summaryResponse.success && summaryResponse.data != null) {
         _summary = summaryResponse.data;
-        AppLogger.data('Summary loaded: ${_summary!.totalEmployees} employees', tag: 'PayrollReport');
+        AppLogger.data(
+          'Summary loaded: ${_summary!.totalEmployees} employees',
+          tag: 'PayrollReport',
+        );
       } else {
         // Handle summary load failure gracefully
-        AppLogger.warning('Could not load summary: ${summaryResponse.message}', tag: 'PayrollReport');
+        AppLogger.warning(
+          'Could not load summary: ${summaryResponse.message}',
+          tag: 'PayrollReport',
+        );
       }
-      
+
       // ✅ Load REAL payroll records from API with better error handling
-      final recordsResponse = await _payrollService.getPayrollRecords(widget.periodId);
-      
+      final recordsResponse = await _payrollService.getPayrollRecords(
+        widget.periodId,
+      );
+
       // ✅ Check mounted after async call
       if (!mounted) return;
-      
+
       // ✅ Better error handling for API response
       if (!recordsResponse.success) {
         // API call failed
-        final errorMsg = recordsResponse.message ?? 'Không thể tải dữ liệu báo cáo';
+        final errorMsg =
+            recordsResponse.message ?? 'Không thể tải dữ liệu báo cáo';
         AppLogger.error('API call failed: $errorMsg', tag: 'PayrollReport');
         throw Exception(errorMsg);
       }
-      
+
       // ✅ Extract actual records array - ONLY check records.length, NOT totalRecords
-      final List<PayrollRecordResponse> actualRecords = recordsResponse.data?.records ?? [];
-      
+      final List<PayrollRecordResponse> actualRecords =
+          recordsResponse.data?.records ?? [];
+
       if (actualRecords.isEmpty) {
         // ✅ Empty state - ONLY based on actual records array length
         AppLogger.info(
           'Empty state: No records in array (records.length: ${actualRecords.length})',
           tag: 'PayrollReport',
         );
-        
+
         // ✅ Update period info from response if available (now using periodId, periodName)
         if (recordsResponse.data?.periodName != null) {
           // Period info is now flat in the response, not nested
           // We already loaded _period from getPayrollPeriodById() call above
-          AppLogger.debug('Period name from records response: ${recordsResponse.data!.periodName}', tag: 'PayrollReport');
+          AppLogger.debug(
+            'Period name from records response: ${recordsResponse.data!.periodName}',
+            tag: 'PayrollReport',
+          );
         }
-        
+
         // Set empty records and update UI - DON'T THROW EXCEPTION
         _records = [];
         _filteredRecords = [];
-        
+
         // ✅ Check mounted before setState
         if (!mounted) return;
-        
+
         setState(() {
           _isLoading = false;
         });
-        
+
         return; // Exit early - empty state UI will show
       }
-      
+
       // ✅ Success - we have actual data in records array
       _records = actualRecords;
       _filteredRecords = List.from(_records);
-      
+
       // ✅ Update period info from response if available (now using periodId, periodName)
       if (recordsResponse.data!.periodName != null) {
         // Period info is now flat in the response, not nested
         // We already loaded _period from getPayrollPeriodById() call above
-        AppLogger.debug('Period name from records response: ${recordsResponse.data!.periodName}', tag: 'PayrollReport');
+        AppLogger.debug(
+          'Period name from records response: ${recordsResponse.data!.periodName}',
+          tag: 'PayrollReport',
+        );
       }
-      
+
       // Extract unique departments/positions (if backend provides)
       // For now, filters are disabled until employee data includes these fields
-      
-      AppLogger.success('Loaded ${_records.length} payroll records from API', tag: 'PayrollReport');
-      
+
+      AppLogger.success(
+        'Loaded ${_records.length} payroll records from API',
+        tag: 'PayrollReport',
+      );
+
       // ✅ Check mounted before final setState
       if (!mounted) return;
-      
+
       setState(() {
         _isLoading = false;
       });
-      
-      AppLogger.success('Report loaded: ${_records.length} records', tag: 'PayrollReport');
+
+      AppLogger.success(
+        'Report loaded: ${_records.length} records',
+        tag: 'PayrollReport',
+      );
       AppLogger.endOperation('Load Payroll Report', success: true);
     } catch (e, stackTrace) {
-      AppLogger.error('Failed to load report', error: e, stackTrace: stackTrace, tag: 'PayrollReport');
+      AppLogger.error(
+        'Failed to load report',
+        error: e,
+        stackTrace: stackTrace,
+        tag: 'PayrollReport',
+      );
       AppLogger.endOperation('Load Payroll Report', success: false);
-      
+
       // ✅ Check mounted before setState
       if (!mounted) return;
-      
+
       // ✅ Format user-friendly error message
       String errorMessage = e.toString();
-      
+
       // Clean up common error patterns
-      if (errorMessage.contains('SocketException') || errorMessage.contains('Failed host lookup')) {
-        errorMessage = 'Không thể kết nối đến server.\nVui lòng kiểm tra kết nối mạng.';
+      if (errorMessage.contains('SocketException') ||
+          errorMessage.contains('Failed host lookup')) {
+        errorMessage =
+            'Không thể kết nối đến server.\nVui lòng kiểm tra kết nối mạng.';
       } else if (errorMessage.contains('TimeoutException')) {
         errorMessage = 'Kết nối bị timeout.\nVui lòng thử lại sau.';
-      } else if (errorMessage.contains('FormatException') || errorMessage.contains('Unexpected character')) {
-        errorMessage = 'Lỗi định dạng dữ liệu từ server.\nVui lòng liên hệ IT support.';
+      } else if (errorMessage.contains('FormatException') ||
+          errorMessage.contains('Unexpected character')) {
+        errorMessage =
+            'Lỗi định dạng dữ liệu từ server.\nVui lòng liên hệ IT support.';
       } else if (errorMessage.contains('Exception:')) {
         // Keep our custom messages clean
         errorMessage = errorMessage.replaceFirst('Exception:', '').trim();
       }
-      
+
       setState(() {
         _error = errorMessage;
         _isLoading = false;
@@ -200,23 +241,27 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> {
   void _filterRecords() {
     // ✅ Check mounted before setState
     if (!mounted) return;
-    
+
     final query = _searchController.text.toLowerCase();
-    
+
     setState(() {
       _filteredRecords = _records.where((record) {
-        final matchesSearch = record.employeeName.toLowerCase().contains(query) ||
-                            record.employeeId.toString().contains(query);
-        
+        final matchesSearch =
+            record.employeeName.toLowerCase().contains(query) ||
+            record.employeeId.toString().contains(query);
+
         // TODO: Add department/position filter when backend provides data
         final matchesDepartment = _selectedDepartment == null || true;
         final matchesPosition = _selectedPosition == null || true;
-        
+
         return matchesSearch && matchesDepartment && matchesPosition;
       }).toList();
     });
-    
-    AppLogger.data('Filtered: ${_filteredRecords.length}/${_records.length} records', tag: 'PayrollReport');
+
+    AppLogger.data(
+      'Filtered: ${_filteredRecords.length}/${_records.length} records',
+      tag: 'PayrollReport',
+    );
   }
 
   // ✅ REMOVED: Dummy data generator - now using REAL API data from getPayrollRecords()
@@ -269,7 +314,11 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> {
     );
   }
 
-  Widget _buildBody(BuildContext context, ThemeData theme, ColorScheme colorScheme) {
+  Widget _buildBody(
+    BuildContext context,
+    ThemeData theme,
+    ColorScheme colorScheme,
+  ) {
     if (_isLoading) {
       return const Center(
         child: Column(
@@ -293,7 +342,7 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Text(
-                _error!, 
+                _error!,
                 style: TextStyle(color: colorScheme.error),
                 textAlign: TextAlign.center,
               ),
@@ -320,7 +369,7 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> {
               // Large icon
               const Text('💸', style: TextStyle(fontSize: 80)),
               const SizedBox(height: 24),
-              
+
               // Title
               Text(
                 'Chưa có Bảng lương',
@@ -329,19 +378,19 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              
+
               // Message
               Text(
                 _period != null
-                  ? 'Kỳ lương "${_period!.periodName}" chưa có bản ghi lương.\nVui lòng tính lương trước.'
-                  : 'Chưa có bản ghi lương cho kỳ này.\nVui lòng tính lương trước.',
+                    ? 'Kỳ lương "${_period!.periodName}" chưa có bản ghi lương.\nVui lòng tính lương trước.'
+                    : 'Chưa có bản ghi lương cho kỳ này.\nVui lòng tính lương trước.',
                 style: theme.textTheme.bodyLarge?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 32),
-              
+
               // ✅ Action Button: Generate Payroll
               if (_period != null && !_period!.isClosed)
                 FilledButton.icon(
@@ -349,11 +398,17 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> {
                   icon: const Icon(Icons.account_balance_wallet, size: 24),
                   label: const Text('💰 Tính Lương Ngay'),
                   style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                    textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 16,
+                    ),
+                    textStyle: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-                
+
               // Info for closed period
               if (_period != null && _period!.isClosed)
                 Container(
@@ -385,20 +440,17 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> {
     return Column(
       children: [
         // ✅ NEW: Negative Salary Warning Banner
-        if (_hasNegativeSalary())
-          _buildNegativeSalaryWarning(),
-        
+        if (_hasNegativeSalary()) _buildNegativeSalaryWarning(),
+
         // Summary Header
         _buildSummaryHeader(theme, colorScheme),
-        
+
         // Filters & Search
         _buildFiltersAndSearch(theme, colorScheme),
-        
+
         // Data Table
-        Expanded(
-          child: _buildDataTable(theme, colorScheme),
-        ),
-        
+        Expanded(child: _buildDataTable(theme, colorScheme)),
+
         // Footer Actions
         _buildFooter(theme, colorScheme),
       ],
@@ -520,9 +572,9 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> {
               fillColor: colorScheme.surfaceContainerHighest,
             ),
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Filter Chips
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -530,33 +582,42 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> {
               children: [
                 const Icon(Icons.filter_list, size: 20),
                 const SizedBox(width: 8),
-                const Text('Bộ lọc:', style: TextStyle(fontWeight: FontWeight.w600)),
+                const Text(
+                  'Bộ lọc:',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
                 const SizedBox(width: 8),
-                
+
                 // Department Filter
                 FilterChip(
                   label: Text(_selectedDepartment ?? 'Phòng ban'),
                   selected: _selectedDepartment != null,
                   onSelected: (selected) {
                     // TODO: Show department picker
-                    AppLogger.ui('Department filter clicked', tag: 'PayrollReport');
+                    AppLogger.ui(
+                      'Department filter clicked',
+                      tag: 'PayrollReport',
+                    );
                   },
                 ),
-                
+
                 const SizedBox(width: 8),
-                
+
                 // Position Filter
                 FilterChip(
                   label: Text(_selectedPosition ?? 'Chức vụ'),
                   selected: _selectedPosition != null,
                   onSelected: (selected) {
                     // TODO: Show position picker
-                    AppLogger.ui('Position filter clicked', tag: 'PayrollReport');
+                    AppLogger.ui(
+                      'Position filter clicked',
+                      tag: 'PayrollReport',
+                    );
                   },
                 ),
-                
+
                 const SizedBox(width: 8),
-                
+
                 // Clear Filters
                 if (_selectedDepartment != null || _selectedPosition != null)
                   TextButton.icon(
@@ -575,7 +636,7 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> {
               ],
             ),
           ),
-          
+
           const SizedBox(height: 12),
         ],
       ),
@@ -599,22 +660,61 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> {
               const Color(0xFF0A84FF).withAlpha(25),
             ),
             columns: const [
-              DataColumn(label: Text('STT', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Nhân viên', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Ngày công', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('OT (giờ)', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Lương cơ bản', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Phụ cấp', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Lương thực nhận', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('', style: TextStyle(fontWeight: FontWeight.bold))),
+              DataColumn(
+                label: Text(
+                  'STT',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              DataColumn(
+                label: Text(
+                  'Nhân viên',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              DataColumn(
+                label: Text(
+                  'Ngày công',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              DataColumn(
+                label: Text(
+                  'OT (giờ)',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              DataColumn(
+                label: Text(
+                  'Lương cơ bản',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              DataColumn(
+                label: Text(
+                  'Phụ cấp',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              DataColumn(
+                label: Text(
+                  'Lương thực nhận',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              DataColumn(
+                label: Text('', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
             ],
             rows: _filteredRecords.asMap().entries.map((entry) {
               final index = entry.key;
               final record = entry.value;
-              
+
               return DataRow(
                 color: WidgetStateProperty.all(
-                  index.isEven ? null : colorScheme.surfaceContainerHighest.withAlpha(50),
+                  index.isEven
+                      ? null
+                      : colorScheme.surfaceContainerHighest.withAlpha(50),
                 ),
                 cells: [
                   DataCell(Text('${index + 1}')),
@@ -623,10 +723,15 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> {
                       children: [
                         CircleAvatar(
                           radius: 16,
-                          backgroundColor: const Color(0xFF0A84FF).withAlpha(50),
+                          backgroundColor: const Color(
+                            0xFF0A84FF,
+                          ).withAlpha(50),
                           child: Text(
                             record.employeeName[0],
-                            style: const TextStyle(color: Color(0xFF0A84FF), fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              color: Color(0xFF0A84FF),
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -636,17 +741,24 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> {
                           children: [
                             Text(
                               record.employeeName,
-                              style: const TextStyle(fontWeight: FontWeight.w600),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                             Text(
                               'MSNV: ${record.employeeId}',
-                              style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
                             ),
                           ],
                         ),
                       ],
                     ),
-                    onTap: () => _viewEmployeeHRProfile(record), // Navigate to HR Profile
+                    onTap: () => _viewEmployeeHRProfile(
+                      record,
+                    ), // Navigate to HR Profile
                   ),
                   DataCell(Text('${record.totalWorkingDays}')),
                   DataCell(Text('${record.totalOTHours}')),
@@ -700,30 +812,41 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> {
       ),
       child: Row(
         children: [
-          Text(
-            'Tổng: ${_filteredRecords.length} nhân viên',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
+          Flexible(
+            child: Text(
+              'Tổng: ${_filteredRecords.length} nhân viên',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
-          const Spacer(),
-          
+          const SizedBox(width: 12),
+
           if (_period != null && !_period!.isClosed) ...[
             FilledButton.icon(
               onPressed: _closePeriod,
-              icon: const Icon(Icons.lock),
-              label: const Text('Đóng kỳ lương'),
+              icon: const Icon(Icons.lock, size: 18),
+              label: const Text('Đóng kỳ', style: TextStyle(fontSize: 13)),
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFFFF3B30),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
           ],
-          
+
           FilledButton.tonalIcon(
             onPressed: _exportPDF,
-            icon: const Icon(Icons.file_download),
-            label: const Text('Xuất PDF'),
+            icon: const Icon(Icons.file_download, size: 18),
+            label: const Text('PDF', style: TextStyle(fontSize: 13)),
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            ),
           ),
         ],
       ),
@@ -733,9 +856,12 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> {
   // ==================== ACTIONS ====================
 
   void _viewEmployeeDetail(PayrollRecordResponse record) {
-    AppLogger.navigation('PayrollReport', 'EmployeePayrollDetail', 
-      arguments: {'employeeId': record.employeeId, 'periodId': widget.periodId});
-    
+    AppLogger.navigation(
+      'PayrollReport',
+      'EmployeePayrollDetail',
+      arguments: {'employeeId': record.employeeId, 'periodId': widget.periodId},
+    );
+
     // Navigate to Employee Salary Detail Screen
     Navigator.push(
       context,
@@ -750,9 +876,12 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> {
 
   /// Navigate to Employee HR Profile (payroll rules management)
   void _viewEmployeeHRProfile(PayrollRecordResponse record) {
-    AppLogger.navigation('PayrollReport', 'EmployeeHRProfile', 
-      arguments: {'employeeId': record.employeeId});
-    
+    AppLogger.navigation(
+      'PayrollReport',
+      'EmployeeHRProfile',
+      arguments: {'employeeId': record.employeeId},
+    );
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -772,8 +901,11 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> {
       return;
     }
 
-    AppLogger.business('User requested PDF export for period ${widget.periodId}', tag: 'PayrollReport');
-    
+    AppLogger.business(
+      'User requested PDF export for period ${widget.periodId}',
+      tag: 'PayrollReport',
+    );
+
     try {
       // Show progress
       showDialog(
@@ -822,12 +954,13 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> {
                 title: const Text('Tải xuống'),
                 onTap: () async {
                   Navigator.pop(context);
-                  final fileName = 'bao_cao_luong_${widget.periodId}_${DateTime.now().millisecondsSinceEpoch}';
+                  final fileName =
+                      'bao_cao_luong_${widget.periodId}_${DateTime.now().millisecondsSinceEpoch}';
                   final filePath = await PayrollPdfGenerator.savePdf(
                     pdf: pdf,
                     fileName: fileName,
                   );
-                  
+
                   if (mounted && filePath != null) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -853,8 +986,12 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> {
                 title: const Text('Chia sẻ'),
                 onTap: () async {
                   Navigator.pop(context);
-                  final fileName = 'bao_cao_luong_${_period?.periodName ?? widget.periodId}';
-                  await PayrollPdfGenerator.sharePdf(pdf: pdf, fileName: fileName);
+                  final fileName =
+                      'bao_cao_luong_${_period?.periodName ?? widget.periodId}';
+                  await PayrollPdfGenerator.sharePdf(
+                    pdf: pdf,
+                    fileName: fileName,
+                  );
                 },
               ),
               const SizedBox(height: 16),
@@ -864,21 +1001,24 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> {
       }
     } catch (e) {
       AppLogger.error('Failed to export PDF', error: e, tag: 'PayrollReport');
-      
+
       // Close loading if still open
       if (mounted) Navigator.pop(context);
-      
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Lỗi tạo PDF: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('❌ Lỗi tạo PDF: $e')));
       }
     }
   }
 
   void _sendEmailNotification() async {
-    AppLogger.business('User requested email notification for period ${widget.periodId}', tag: 'PayrollReport');
-    
+    AppLogger.business(
+      'User requested email notification for period ${widget.periodId}',
+      tag: 'PayrollReport',
+    );
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -906,7 +1046,7 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> {
         ],
       ),
     );
-    
+
     if (confirmed == true) {
       // Show progress
       if (mounted) {
@@ -925,13 +1065,13 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> {
           ),
         );
       }
-      
+
       // Simulate email sending
       await Future.delayed(const Duration(seconds: 3));
-      
+
       if (mounted) {
         Navigator.pop(context);
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -945,14 +1085,17 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> {
           ),
         );
       }
-      
+
       // TODO: Implement actual email sending via backend API
     }
   }
 
   void _closePeriod() async {
-    AppLogger.business('User requested to close period ${widget.periodId}', tag: 'PayrollReport');
-    
+    AppLogger.business(
+      'User requested to close period ${widget.periodId}',
+      tag: 'PayrollReport',
+    );
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -977,7 +1120,7 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> {
         ],
       ),
     );
-    
+
     if (confirmed == true) {
       // Show progress
       if (mounted) {
@@ -996,14 +1139,14 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> {
           ),
         );
       }
-      
+
       try {
         // TODO: Call API to close period
         await Future.delayed(const Duration(seconds: 2));
-        
+
         if (mounted) {
           Navigator.pop(context); // Close progress
-          
+
           // Update UI
           setState(() {
             _period = PayrollPeriodResponse(
@@ -1016,7 +1159,7 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> {
               createdAt: _period!.createdAt,
             );
           });
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Row(
@@ -1033,7 +1176,7 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> {
       } catch (e) {
         if (mounted) {
           Navigator.pop(context); // Close progress
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Lỗi: ${e.toString()}'),
@@ -1057,7 +1200,7 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> {
   // ✅ NEW: Build negative salary warning banner
   Widget _buildNegativeSalaryWarning() {
     final negativeCount = _filteredRecords.where((r) => r.netSalary < 0).length;
-    
+
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       padding: const EdgeInsets.all(16),
@@ -1089,10 +1232,7 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> {
                 const SizedBox(height: 4),
                 Text(
                   'Có $negativeCount nhân viên có lương ròng âm. Vui lòng kiểm tra lại Điều chỉnh Lương (Thưởng/Phạt).',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.red[900],
-                  ),
+                  style: TextStyle(fontSize: 13, color: Colors.red[900]),
                 ),
               ],
             ),
@@ -1171,9 +1311,7 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> {
                   const Icon(Icons.check_circle, color: Colors.white),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
-                      response.message ?? 'Tính lương thành công!',
-                    ),
+                    child: Text(response.message ?? 'Tính lương thành công!'),
                   ),
                 ],
               ),
@@ -1201,7 +1339,8 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(response.message ?? 'Không thể tính lương'),
-                  if (response.data != null && response.data!.errors.isNotEmpty) ...[
+                  if (response.data != null &&
+                      response.data!.errors.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     const Text(
                       'Chi tiết lỗi:',

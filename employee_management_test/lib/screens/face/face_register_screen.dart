@@ -47,6 +47,10 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen> {
           setState(() {
             _selectedEmployee = employee;
             _isReRegister = isReRegister;
+            // Add the selected employee to the list to avoid dropdown error
+            if (!_employees.contains(employee)) {
+              _employees.add(employee);
+            }
           });
         }
       }
@@ -1063,13 +1067,17 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen> {
                             ),
                           ),
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
+                            horizontal: 12,
                             vertical: 4,
                           ),
                           child: DropdownButtonFormField<Employee>(
-                            value: _selectedEmployee,
+                            value: _employees.contains(_selectedEmployee)
+                                ? _selectedEmployee
+                                : null,
+                            isExpanded: true,
                             decoration: const InputDecoration(
                               labelText: 'Chọn nhân viên',
+                              labelStyle: TextStyle(fontSize: 13),
                               border: InputBorder.none,
                               prefixIcon: Icon(
                                 Icons.person_outline_rounded,
@@ -1081,7 +1089,8 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen> {
                                 value: employee,
                                 child: Text(
                                   '${employee.employeeCode} - ${employee.fullName}',
-                                  style: const TextStyle(fontSize: 14),
+                                  style: const TextStyle(fontSize: 13),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               );
                             }).toList(),
@@ -1090,7 +1099,10 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen> {
                                 _selectedEmployee = employee;
                               });
                             },
-                            hint: const Text('Vui lòng chọn'),
+                            hint: const Text(
+                              'Vui lòng chọn',
+                              style: TextStyle(fontSize: 13),
+                            ),
                           ),
                         ),
                     ],

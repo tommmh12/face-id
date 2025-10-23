@@ -5,7 +5,7 @@ import 'secure_storage_service.dart';
 
 class ApiConfig {
   static const String baseUrl = AppConfig.baseUrl;
-  
+
   static const Map<String, String> headers = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -17,7 +17,9 @@ class ApiConfig {
     if (token != null && token.isNotEmpty) {
       // ✅ BẮT BUỘC: PHẢI CÓ DẤU CÁCH CHÍNH XÁC SAU "Bearer"
       authHeaders['Authorization'] = 'Bearer $token';
-      print('🔐 [AUTH] Token added to headers: Bearer ${token.substring(0, 20)}...');
+      print(
+        '🔐 [AUTH] Token added to headers: Bearer ${token.substring(0, 20)}...',
+      );
     } else {
       print('⚠️ [AUTH] No valid token provided - API call may fail');
     }
@@ -27,7 +29,9 @@ class ApiConfig {
   /// ✅ Helper method: Automatically get authenticated headers
   static Future<Map<String, String>> getAuthenticatedHeaders() async {
     final token = await SecureStorageService.readToken();
-    print('🔍 [AUTH] Retrieved token from storage: ${token != null ? "✅ Found" : "❌ Null"}');
+    print(
+      '🔍 [AUTH] Retrieved token from storage: ${token != null ? "✅ Found" : "❌ Null"}',
+    );
     return getAuthHeaders(token);
   }
 }
@@ -39,7 +43,8 @@ class ApiException implements Exception {
   ApiException(this.message, [this.statusCode]);
 
   @override
-  String toString() => 'ApiException: $message${statusCode != null ? ' (Status: $statusCode)' : ''}';
+  String toString() =>
+      'ApiException: $message${statusCode != null ? ' (Status: $statusCode)' : ''}';
 }
 
 class ApiResponse<T> {
@@ -56,11 +61,7 @@ class ApiResponse<T> {
   });
 
   factory ApiResponse.success(T data, [int? statusCode]) {
-    return ApiResponse(
-      success: true,
-      data: data,
-      statusCode: statusCode,
-    );
+    return ApiResponse(success: true, data: data, statusCode: statusCode);
   }
 
   factory ApiResponse.error(String message, [int? statusCode]) {
@@ -82,17 +83,19 @@ class BaseApiService {
         try {
           final jsonData = json.decode(response.body);
           // Trả về JSON lỗi để handleRequest xử lý
-          return jsonData is Map ? jsonData as Map<String, dynamic> : {
-            'success': false, 
-            'message': jsonData.toString(), 
-            'statusCode': response.statusCode
-          };
+          return jsonData is Map
+              ? jsonData as Map<String, dynamic>
+              : {
+                  'success': false,
+                  'message': jsonData.toString(),
+                  'statusCode': response.statusCode,
+                };
         } catch (e) {
           // Nếu JSON lỗi không hợp lệ, trả về một Map lỗi an toàn
           return {
-            'success': false, 
-            'message': 'Lỗi máy chủ không rõ', 
-            'statusCode': response.statusCode
+            'success': false,
+            'message': 'Lỗi máy chủ không rõ',
+            'statusCode': response.statusCode,
           };
         }
       } else {
@@ -100,11 +103,11 @@ class BaseApiService {
         return {
           'success': false,
           'message': 'HTTP ${response.statusCode}: ${response.reasonPhrase}',
-          'statusCode': response.statusCode
+          'statusCode': response.statusCode,
         };
       }
     }
-    
+
     // [2] LỚP BẢO VỆ CRITICAL - Guard Clause cho Empty Body
     if (response.body.isEmpty) {
       // Nếu Status 200-299 nhưng body trống (Content-Length: 0)
@@ -112,7 +115,7 @@ class BaseApiService {
       return {
         'success': true,
         'message': 'Không có dữ liệu, nhưng kết nối thành công.',
-        'data': [] // Mảng rỗng để tránh crash khi map to list
+        'data': [], // Mảng rỗng để tránh crash khi map to list
       };
     }
 
@@ -124,10 +127,12 @@ class BaseApiService {
         return {
           'success': true,
           'message': 'Response received',
-          'data': jsonData
+          'data': jsonData,
         };
       }
-      return jsonData is Map ? jsonData as Map<String, dynamic> : {'data': jsonData};
+      return jsonData is Map
+          ? jsonData as Map<String, dynamic>
+          : {'data': jsonData};
     } on FormatException catch (e) {
       // JSON malformed - body không phải JSON hợp lệ
       throw ApiException('Lỗi định dạng JSON từ Server: ${e.message}');
@@ -142,19 +147,38 @@ class BaseApiService {
   ) async {
     try {
       final response = await requestFunction();
-      
+
       // Sử dụng _parseResponse với guard clauses - chỉ parse, không ném exception cho status code
       final Map<String, dynamic> jsonData = _parseResponse(response);
 
       // KIỂM TRA MÃ TRẠNG THÁI HTTP (Không dựa vào success field nữa)
       if (response.statusCode >= 200 && response.statusCode < 300) {
         // Success response (2xx)
-        return ApiResponse.success(fromJson(jsonData), response.statusCode);
+        // ✅ FIX: Backend có 2 formats:
+        // Format 1: {"success": true, "data": {...}} - nested
+        // Format 2: {"success": true, "id": 23, ...} - flat
+
+        Map<String, dynamic> dataToPass;
+
+        if (jsonData.containsKey('data') &&
+            jsonData['data'] is Map<String, dynamic>) {
+          // Format 1: Nested - extract data object
+          dataToPass = jsonData['data'] as Map<String, dynamic>;
+        } else {
+          // Format 2: Flat - remove success/message fields
+          dataToPass = Map.from(jsonData);
+          dataToPass.remove('success');
+          dataToPass.remove('message');
+          dataToPass.remove('timestamp');
+        }
+
+        return ApiResponse.success(fromJson(dataToPass), response.statusCode);
       } else {
         // Error response (4xx, 5xx) - Lấy thông báo lỗi từ JSON body
-        final errorMessage = jsonData['message'] ?? 
-                           jsonData['error'] ?? 
-                           'Lỗi không xác định (HTTP ${response.statusCode})';
+        final errorMessage =
+            jsonData['message'] ??
+            jsonData['error'] ??
+            'Lỗi không xác định (HTTP ${response.statusCode})';
         return ApiResponse.error(errorMessage, response.statusCode);
       }
     } on ApiException catch (e) {
@@ -173,7 +197,7 @@ class BaseApiService {
   ) async {
     try {
       final response = await requestFunction();
-      
+
       // [1] LỚP BẢO VỆ - Kiểm tra empty body TRƯỚC khi decode
       if (response.body.isEmpty) {
         if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -181,8 +205,8 @@ class BaseApiService {
           return ApiResponse.success(<T>[], response.statusCode);
         } else {
           return ApiResponse.error(
-            'HTTP ${response.statusCode}: ${response.reasonPhrase}', 
-            response.statusCode
+            'HTTP ${response.statusCode}: ${response.reasonPhrase}',
+            response.statusCode,
           );
         }
       }
@@ -215,15 +239,19 @@ class BaseApiService {
                 .toList();
             return ApiResponse.success(items, response.statusCode);
           }
-          return ApiResponse.error('Expected array in data field but got ${data.runtimeType}');
+          return ApiResponse.error(
+            'Expected array in data field but got ${data.runtimeType}',
+          );
         } else {
-          return ApiResponse.error('Expected array response but got ${jsonData.runtimeType}');
+          return ApiResponse.error(
+            'Expected array response but got ${jsonData.runtimeType}',
+          );
         }
       } else {
         // Error response (4xx, 5xx) - Lấy thông báo lỗi từ JSON body
-        final errorMessage = (jsonData is Map) 
-          ? (jsonData['message'] ?? jsonData['error'] ?? 'Lỗi không xác định')
-          : 'HTTP ${response.statusCode}: ${response.reasonPhrase}';
+        final errorMessage = (jsonData is Map)
+            ? (jsonData['message'] ?? jsonData['error'] ?? 'Lỗi không xác định')
+            : 'HTTP ${response.statusCode}: ${response.reasonPhrase}';
         return ApiResponse.error(errorMessage, response.statusCode);
       }
     } on FormatException catch (e) {

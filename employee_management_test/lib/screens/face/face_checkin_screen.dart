@@ -508,6 +508,19 @@ class _FaceCheckinScreenState extends State<FaceCheckinScreen> {
           ],
         ),
         actions: [
+          if (result.matchedEmployee != null)
+            TextButton.icon(
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.pushNamed(
+                  context,
+                  '/employee/detail',
+                  arguments: {'employeeId': result.matchedEmployee!.employeeId},
+                );
+              },
+              icon: const Icon(Icons.person),
+              label: const Text('Xem chi tiết'),
+            ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('Đóng'),

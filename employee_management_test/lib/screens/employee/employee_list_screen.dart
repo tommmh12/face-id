@@ -275,11 +275,12 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
                 ),
                 child: DropdownButtonFormField<int?>(
                   value: _selectedDepartmentId,
+                  isExpanded: true,
                   decoration: InputDecoration(
                     labelText: 'Lọc theo phòng ban',
                     labelStyle: TextStyle(
                       color: Colors.grey[600],
-                      fontSize: 14,
+                      fontSize: 13,
                       fontWeight: FontWeight.w500,
                     ),
                     border: InputBorder.none,
@@ -297,8 +298,8 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
                       ),
                     ),
                     contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 16,
+                      horizontal: 12,
+                      vertical: 12,
                     ),
                   ),
                   items: [
@@ -306,7 +307,11 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
                       value: null,
                       child: Text(
                         'Tất cả phòng ban',
-                        style: TextStyle(fontWeight: FontWeight.w500),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     ..._departments.map(
@@ -314,7 +319,11 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
                         value: dept.id,
                         child: Text(
                           dept.name,
-                          style: const TextStyle(fontWeight: FontWeight.w500),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ),
@@ -732,7 +741,10 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
                                                 Navigator.pushNamed(
                                                   context,
                                                   '/face/register',
-                                                  arguments: employee,
+                                                  arguments: {
+                                                    'employee': employee,
+                                                    'isReRegister': false,
+                                                  },
                                                 );
                                               },
                                               borderRadius:

@@ -25,6 +25,7 @@ import 'screens/payroll/payroll_chart_screen.dart';
 import 'screens/api_test_screen.dart';
 import 'services/loading_service.dart';
 import 'utils/camera_helper.dart';
+import 'test_employee_api.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -222,7 +223,7 @@ class MyApp extends StatelessWidget {
         // Scaffold Background
         scaffoldBackgroundColor: const Color(0xFFF5F7FA),
       ),
-      
+
       // ✅ Global Loading Overlay
       builder: (context, child) {
         return Stack(
@@ -239,7 +240,7 @@ class MyApp extends StatelessWidget {
           ],
         );
       },
-      
+
       initialRoute: '/splash',
       routes: {
         '/splash': (context) => const SplashScreen(),
@@ -257,6 +258,7 @@ class MyApp extends StatelessWidget {
         '/payroll': (context) => const PayrollDashboardScreen(),
         '/payroll/chart': (context) => const PayrollChartScreen(),
         '/api-test': (context) => const ApiTestScreen(),
+        '/test/employee': (context) => const TestEmployeeApiScreen(),
       },
       onGenerateRoute: (settings) {
         // Handle routes with parameters
@@ -274,14 +276,13 @@ class MyApp extends StatelessWidget {
                 EmployeeFormScreen(employee: args['employee']),
           );
         }
-        
+
         // Payroll routes with parameters
         if (settings.name == '/payroll/report') {
           final args = settings.arguments as Map<String, dynamic>;
           return MaterialPageRoute(
-            builder: (context) => PayrollReportScreen(
-              periodId: args['periodId'],
-            ),
+            builder: (context) =>
+                PayrollReportScreen(periodId: args['periodId']),
           );
         }
         if (settings.name == '/payroll/rule-setup') {
@@ -324,7 +325,7 @@ class MyApp extends StatelessWidget {
             ),
           );
         }
-        
+
         return null;
       },
     );

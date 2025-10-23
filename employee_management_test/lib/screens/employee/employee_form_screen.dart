@@ -478,7 +478,9 @@ class _EmployeeFormScreenState extends State<EmployeeFormScreen> {
         boxShadow: AppShadows.small,
       ),
       child: DropdownButtonFormField<int>(
-        value: _selectedDepartmentId,
+        value: _departments.any((d) => d.id == _selectedDepartmentId)
+            ? _selectedDepartmentId
+            : null,
         decoration: const InputDecoration(
           labelText: 'Phòng ban',
           prefixIcon: Icon(Icons.business, color: AppColors.primaryBlue),

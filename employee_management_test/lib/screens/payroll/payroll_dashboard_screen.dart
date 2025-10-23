@@ -6,7 +6,7 @@ import '../../utils/app_logger.dart';
 import 'audit_log_screen.dart';
 
 /// 💰 Payroll Dashboard - Material 3 Design
-/// 
+///
 /// Features:
 /// - 3 Summary Statistics Cards
 /// - Payroll Period List with Status Chips
@@ -22,8 +22,12 @@ class PayrollDashboardScreen extends StatefulWidget {
 
 class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
   final PayrollApiService _payrollService = PayrollApiService();
-  final _currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: '₫', decimalDigits: 0);
-  
+  final _currencyFormat = NumberFormat.currency(
+    locale: 'vi_VN',
+    symbol: '₫',
+    decimalDigits: 0,
+  );
+
   List<PayrollPeriodResponse> _periods = [];
   PayrollSummaryResponse? _currentSummary;
   bool _isLoading = true;
@@ -44,10 +48,10 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
 
     try {
       AppLogger.startOperation('Load Payroll Dashboard Data');
-      
+
       // Load periods
       final periodsResponse = await _payrollService.getPayrollPeriods();
-      
+
       if (periodsResponse.success && periodsResponse.data != null) {
         setState(() {
           _periods = periodsResponse.data!;
@@ -56,9 +60,12 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
             _selectedPeriodId = _periods.first.id;
           }
         });
-        
-        AppLogger.success('Loaded ${_periods.length} payroll periods', tag: 'PayrollDashboard');
-        
+
+        AppLogger.success(
+          'Loaded ${_periods.length} payroll periods',
+          tag: 'PayrollDashboard',
+        );
+
         // Load summary for selected period
         if (_selectedPeriodId != null) {
           await _loadSummary(_selectedPeriodId!);
@@ -67,12 +74,23 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
         setState(() {
           _error = periodsResponse.message ?? 'Không thể tải dữ liệu';
         });
-        AppLogger.warning('Failed to load periods: ${periodsResponse.message}', tag: 'PayrollDashboard');
+        AppLogger.warning(
+          'Failed to load periods: ${periodsResponse.message}',
+          tag: 'PayrollDashboard',
+        );
       }
-      
-      AppLogger.endOperation('Load Payroll Dashboard Data', success: _error == null);
+
+      AppLogger.endOperation(
+        'Load Payroll Dashboard Data',
+        success: _error == null,
+      );
     } catch (e, stackTrace) {
-      AppLogger.error('Dashboard load error', error: e, stackTrace: stackTrace, tag: 'PayrollDashboard');
+      AppLogger.error(
+        'Dashboard load error',
+        error: e,
+        stackTrace: stackTrace,
+        tag: 'PayrollDashboard',
+      );
       setState(() {
         _error = 'Lỗi kết nối: ${e.toString()}';
       });
@@ -87,15 +105,21 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
 
   Future<void> _loadSummary(int periodId) async {
     try {
-      AppLogger.data('Loading summary for period $periodId', tag: 'PayrollDashboard');
-      
+      AppLogger.data(
+        'Loading summary for period $periodId',
+        tag: 'PayrollDashboard',
+      );
+
       final summaryResponse = await _payrollService.getPayrollSummary(periodId);
-      
+
       if (summaryResponse.success && summaryResponse.data != null) {
         setState(() {
           _currentSummary = summaryResponse.data;
         });
-        AppLogger.success('Summary loaded: ${_currentSummary!.totalEmployees} employees', tag: 'PayrollDashboard');
+        AppLogger.success(
+          'Summary loaded: ${_currentSummary!.totalEmployees} employees',
+          tag: 'PayrollDashboard',
+        );
       }
     } catch (e) {
       AppLogger.warning('Failed to load summary: $e', tag: 'PayrollDashboard');
@@ -131,9 +155,7 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
               AppLogger.navigation('PayrollDashboard', 'AuditLogScreen');
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const AuditLogScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => const AuditLogScreen()),
               );
             },
             icon: const Icon(Icons.history),
@@ -170,7 +192,11 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
     );
   }
 
-  Widget _buildBody(BuildContext context, ThemeData theme, ColorScheme colorScheme) {
+  Widget _buildBody(
+    BuildContext context,
+    ThemeData theme,
+    ColorScheme colorScheme,
+  ) {
     if (_isLoading) {
       return const Center(
         child: Column(
@@ -214,7 +240,7 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
               child: _buildStatisticsCards(theme, colorScheme),
             ),
           ),
-          
+
           // Section Header
           SliverToBoxAdapter(
             child: Padding(
@@ -225,6 +251,7 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
                     'Danh sách kỳ lương',
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
+                      fontSize: 16,
                     ),
                   ),
                   const Spacer(),
@@ -233,14 +260,17 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
                       AppLogger.ui('View all periods', tag: 'PayrollDashboard');
                       // TODO: Navigate to full list
                     },
-                    icon: const Icon(Icons.arrow_forward, size: 18),
-                    label: const Text('Xem tất cả'),
+                    icon: const Icon(Icons.arrow_forward, size: 16),
+                    label: const Text(
+                      'Xem tất cả',
+                      style: TextStyle(fontSize: 13),
+                    ),
                   ),
                 ],
               ),
             ),
           ),
-          
+
           // Payroll Periods List
           _periods.isEmpty
               ? SliverFillRemaining(
@@ -248,7 +278,11 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.inbox_outlined, size: 64, color: colorScheme.outline),
+                        Icon(
+                          Icons.inbox_outlined,
+                          size: 64,
+                          color: colorScheme.outline,
+                        ),
                         const SizedBox(height: 16),
                         Text(
                           'Chưa có kỳ lương nào',
@@ -267,13 +301,15 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
               : SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
                   sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final period = _periods[index];
-                        return _buildPeriodCard(context, period, theme, colorScheme);
-                      },
-                      childCount: _periods.length,
-                    ),
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final period = _periods[index];
+                      return _buildPeriodCard(
+                        context,
+                        period,
+                        theme,
+                        colorScheme,
+                      );
+                    }, childCount: _periods.length),
                   ),
                 ),
         ],
@@ -305,8 +341,10 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
               child: _buildStatCard(
                 icon: Icons.account_balance_wallet,
                 title: 'Tổng chi phí',
-                value: summary != null 
-                    ? _currencyFormat.format(summary.totalNetSalary).replaceAll('₫', '')
+                value: summary != null
+                    ? _currencyFormat
+                          .format(summary.totalNetSalary)
+                          .replaceAll('₫', '')
                     : '--',
                 subtitle: '₫ Net Salary',
                 color: const Color(0xFF34C759), // Success green
@@ -315,15 +353,15 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
             ),
           ],
         ),
-        
+
         const SizedBox(height: 12),
-        
+
         // Row 2: Current Period (Full Width)
         _buildStatCard(
           icon: Icons.calendar_today,
           title: 'Kỳ lương hiện tại',
           value: summary?.periodName ?? 'Chưa chọn',
-          subtitle: _selectedPeriodId != null 
+          subtitle: _selectedPeriodId != null
               ? _formatPeriodDate()
               : 'Chọn kỳ lương để xem',
           color: const Color(0xFFFF9500), // Warning orange
@@ -422,7 +460,9 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: isSelected ? const Color(0xFF0A84FF) : colorScheme.outlineVariant,
+          color: isSelected
+              ? const Color(0xFF0A84FF)
+              : colorScheme.outlineVariant,
           width: isSelected ? 2 : 1,
         ),
       ),
@@ -432,7 +472,10 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
             _selectedPeriodId = period.id;
           });
           _loadSummary(period.id);
-          AppLogger.ui('Selected period: ${period.periodName}', tag: 'PayrollDashboard');
+          AppLogger.ui(
+            'Selected period: ${period.periodName}',
+            tag: 'PayrollDashboard',
+          );
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(
@@ -466,10 +509,12 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
                   Chip(
                     label: Text(period.isClosed ? 'Đã đóng' : 'Đang mở'),
                     labelStyle: theme.textTheme.bodySmall?.copyWith(
-                      color: period.isClosed ? colorScheme.onSurfaceVariant : const Color(0xFF34C759),
+                      color: period.isClosed
+                          ? colorScheme.onSurfaceVariant
+                          : const Color(0xFF34C759),
                       fontWeight: FontWeight.w600,
                     ),
-                    backgroundColor: period.isClosed 
+                    backgroundColor: period.isClosed
                         ? colorScheme.surfaceContainerHighest
                         : const Color(0xFF34C759).withAlpha(25),
                     side: BorderSide.none,
@@ -477,11 +522,11 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 12),
               const Divider(height: 1),
               const SizedBox(height: 12),
-              
+
               // Action Buttons
               Row(
                 children: [
@@ -489,11 +534,20 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
                     Expanded(
                       child: FilledButton.tonalIcon(
                         onPressed: () => _generatePayroll(context, period.id),
-                        icon: const Icon(Icons.calculate, size: 18),
-                        label: const Text('Tính lương'),
+                        icon: const Icon(Icons.calculate, size: 16),
+                        label: const Text(
+                          'Tính lương',
+                          style: TextStyle(fontSize: 12),
+                        ),
                         style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFF0A84FF).withAlpha(25),
+                          backgroundColor: const Color(
+                            0xFF0A84FF,
+                          ).withAlpha(25),
                           foregroundColor: const Color(0xFF0A84FF),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                         ),
                       ),
                     ),
@@ -502,8 +556,17 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () => _viewReport(context, period.id),
-                      icon: const Icon(Icons.visibility, size: 18),
-                      label: const Text('Xem báo cáo'),
+                      icon: const Icon(Icons.visibility, size: 16),
+                      label: const Text(
+                        'Xem báo cáo',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -519,12 +582,12 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
 
   void _showCreatePeriodDialog(BuildContext context) {
     AppLogger.ui('Opening create period dialog', tag: 'PayrollDashboard');
-    
+
     final now = DateTime.now();
     final periodNameController = TextEditingController(
       text: 'Kỳ lương ${DateFormat('MM/yyyy').format(now)}',
     );
-    
+
     DateTime startDate = DateTime(now.year, now.month, 1);
     DateTime endDate = DateTime(now.year, now.month + 1, 0);
 
@@ -553,9 +616,9 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
                     border: OutlineInputBorder(),
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Start Date
                 ListTile(
                   contentPadding: EdgeInsets.zero,
@@ -576,7 +639,7 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
                     }
                   },
                 ),
-                
+
                 // End Date
                 ListTile(
                   contentPadding: EdgeInsets.zero,
@@ -613,7 +676,7 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
                   );
                   return;
                 }
-                
+
                 Navigator.pop(context);
                 await _createPeriod(
                   periodNameController.text.trim(),
@@ -630,22 +693,32 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
     );
   }
 
-  Future<void> _createPeriod(String name, DateTime startDate, DateTime endDate) async {
+  Future<void> _createPeriod(
+    String name,
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
     AppLogger.startOperation('Create Payroll Period');
-    AppLogger.data('Period: $name ($startDate - $endDate)', tag: 'PayrollDashboard');
-    
+    AppLogger.data(
+      'Period: $name ($startDate - $endDate)',
+      tag: 'PayrollDashboard',
+    );
+
     try {
       final request = CreatePayrollPeriodRequest(
         periodName: name,
         startDate: startDate,
         endDate: endDate,
       );
-      
+
       final response = await _payrollService.createPayrollPeriod(request);
-      
+
       if (response.success) {
-        AppLogger.success('Period created successfully', tag: 'PayrollDashboard');
-        
+        AppLogger.success(
+          'Period created successfully',
+          tag: 'PayrollDashboard',
+        );
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -660,16 +733,21 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
             ),
           );
         }
-        
+
         await _loadData();
         AppLogger.endOperation('Create Payroll Period', success: true);
       } else {
         throw Exception(response.message);
       }
     } catch (e, stackTrace) {
-      AppLogger.error('Failed to create period', error: e, stackTrace: stackTrace, tag: 'PayrollDashboard');
+      AppLogger.error(
+        'Failed to create period',
+        error: e,
+        stackTrace: stackTrace,
+        tag: 'PayrollDashboard',
+      );
       AppLogger.endOperation('Create Payroll Period', success: false);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -688,12 +766,19 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
   }
 
   Future<void> _generatePayroll(BuildContext context, int periodId) async {
-    AppLogger.business('User requested payroll generation for period $periodId', tag: 'PayrollDashboard');
-    
+    AppLogger.business(
+      'User requested payroll generation for period $periodId',
+      tag: 'PayrollDashboard',
+    );
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        icon: const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 48),
+        icon: const Icon(
+          Icons.warning_amber_rounded,
+          color: Colors.orange,
+          size: 48,
+        ),
         title: const Text('Xác nhận tính lương'),
         content: const Text(
           'Bạn có chắc chắn muốn tính lương cho tất cả nhân viên trong kỳ này?\n\n'
@@ -711,10 +796,10 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
         ],
       ),
     );
-    
+
     if (confirmed == true) {
       AppLogger.startOperation('Generate Payroll');
-      
+
       // Show progress dialog
       if (context.mounted) {
         showDialog(
@@ -732,26 +817,30 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
           ),
         );
       }
-      
+
       try {
         final response = await _payrollService.generatePayroll(periodId);
-        
+
         if (context.mounted) {
           Navigator.pop(context); // Close progress dialog
         }
-        
+
         if (response.success) {
           AppLogger.success(
             'Payroll generated: ${response.data?.successCount}/${response.data?.totalEmployees} employees',
             tag: 'PayrollDashboard',
           );
           AppLogger.endOperation('Generate Payroll', success: true);
-          
+
           if (context.mounted) {
             await showDialog(
               context: context,
               builder: (context) => AlertDialog(
-                icon: const Icon(Icons.check_circle, color: Color(0xFF34C759), size: 48),
+                icon: const Icon(
+                  Icons.check_circle,
+                  color: Color(0xFF34C759),
+                  size: 48,
+                ),
                 title: const Text('Tính lương thành công!'),
                 content: Text(
                   'Đã tính lương cho ${response.data?.successCount ?? 0} nhân viên.\n'
@@ -769,18 +858,23 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
               ),
             );
           }
-          
+
           await _loadSummary(periodId);
         } else {
           throw Exception(response.message);
         }
       } catch (e, stackTrace) {
-        AppLogger.error('Payroll generation failed', error: e, stackTrace: stackTrace, tag: 'PayrollDashboard');
+        AppLogger.error(
+          'Payroll generation failed',
+          error: e,
+          stackTrace: stackTrace,
+          tag: 'PayrollDashboard',
+        );
         AppLogger.endOperation('Generate Payroll', success: false);
-        
+
         if (context.mounted) {
           Navigator.pop(context); // Close progress dialog
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Lỗi tính lương: ${e.toString()}'),
@@ -793,11 +887,15 @@ class _PayrollDashboardScreenState extends State<PayrollDashboardScreen> {
   }
 
   void _viewReport(BuildContext context, int periodId) {
-    AppLogger.navigation('PayrollDashboard', 'PayrollReportScreen', arguments: {'periodId': periodId});
-    
+    AppLogger.navigation(
+      'PayrollDashboard',
+      'PayrollReportScreen',
+      arguments: {'periodId': periodId},
+    );
+
     Navigator.pushNamed(
-      context, 
-      '/payroll/report', 
+      context,
+      '/payroll/report',
       arguments: {'periodId': periodId},
     );
   }
