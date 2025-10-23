@@ -294,42 +294,102 @@ class _EmployeeCreateScreenState extends State<EmployeeCreateScreen> {
 
   Widget _buildHeaderCard() {
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.xl),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.primaryBlue, AppColors.primaryDark],
+        gradient: LinearGradient(
+          colors: AppColors.gradientSoftBlue,
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(AppBorderRadius.large),
-        boxShadow: AppShadows.medium,
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white24,
-              borderRadius: BorderRadius.circular(AppBorderRadius.medium),
-            ),
-            child: const Icon(Icons.person_add, color: Colors.white, size: 32),
+        borderRadius: BorderRadius.circular(AppBorderRadius.xl),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryBlue.withOpacity(0.25),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
-          const SizedBox(width: AppSpacing.lg),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Thêm nhân viên mới',
-                  style: AppTextStyles.h3.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.25),
+                  borderRadius: BorderRadius.circular(AppBorderRadius.large),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.3),
+                    width: 2,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Điền thông tin cơ bản bên dưới',
-                  style: AppTextStyles.bodyMedium.copyWith(color: Colors.white70),
+                child: const Icon(
+                  Icons.person_add_alt_1_rounded, 
+                  color: Colors.white, 
+                  size: 36,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.lg),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Thêm Nhân Viên Mới',
+                      style: AppTextStyles.h3.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: AppSpacing.xs,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(AppBorderRadius.rounded),
+                      ),
+                      child: Text(
+                        'Điền thông tin cơ bản',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: Colors.white.withOpacity(0.95),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          // Progress indicator or steps
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline_rounded,
+                  color: Colors.white.withOpacity(0.9),
+                  size: 18,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    'Sau khi tạo, bạn có thể đăng ký Face ID cho nhân viên',
+                    style: AppTextStyles.caption.copyWith(
+                      color: Colors.white.withOpacity(0.9),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -341,24 +401,78 @@ class _EmployeeCreateScreenState extends State<EmployeeCreateScreen> {
 
   Widget _buildDepartmentDropdown() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+        borderRadius: BorderRadius.circular(AppBorderRadius.large),
         boxShadow: AppShadows.small,
+        border: Border.all(
+          color: AppColors.borderLight,
+          width: 1.5,
+        ),
       ),
       child: DropdownButtonFormField<int>(
         value: _selectedDepartmentId,
-        decoration: const InputDecoration(
-          labelText: 'Phòng ban *',
-          prefixIcon: Icon(Icons.business, color: AppColors.primaryBlue),
-          border: InputBorder.none,
+        style: AppTextStyles.bodyMedium.copyWith(
+          fontWeight: FontWeight.w500,
+          color: AppColors.textPrimary,
         ),
+        decoration: InputDecoration(
+          labelText: 'Phòng ban *',
+          labelStyle: AppTextStyles.label.copyWith(
+            color: AppColors.textSecondary,
+          ),
+          prefixIcon: Container(
+            margin: const EdgeInsets.all(AppSpacing.sm),
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: AppColors.gradientSoftTeal,
+              ),
+              borderRadius: BorderRadius.circular(AppBorderRadius.small),
+            ),
+            child: const Icon(
+              Icons.business_rounded, 
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.lg,
+          ),
+        ),
+        dropdownColor: Colors.white,
         items: _departments
             .map(
               (dept) => DropdownMenuItem<int>(
                 value: dept.id,
-                child: Text('${dept.code} - ${dept.name}'),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: AppColors.gradientSoftTeal,
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          '${dept.code} - ${dept.name}',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             )
             .toList(),
@@ -370,43 +484,93 @@ class _EmployeeCreateScreenState extends State<EmployeeCreateScreen> {
   }
 
   Widget _buildDatePicker() {
-    return InkWell(
-      onTap: _selectDateOfBirth,
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(AppBorderRadius.medium),
-          boxShadow: AppShadows.small,
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.calendar_today, color: AppColors.primaryBlue),
-            const SizedBox(width: AppSpacing.lg),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Ngày sinh',
-                      style: AppTextStyles.caption
-                          .copyWith(color: AppColors.textSecondary)),
-                  const SizedBox(height: 4),
-                  Text(
-                    _selectedDateOfBirth != null
-                        ? DateFormat('dd/MM/yyyy')
-                            .format(_selectedDateOfBirth!)
-                        : 'Chọn ngày sinh',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: _selectedDateOfBirth != null
-                          ? AppColors.textPrimary
-                          : AppColors.textSecondary,
-                    ),
-                  ),
-                ],
+    return Container(
+      decoration: BoxDecoration(
+        boxShadow: AppShadows.small,
+        borderRadius: BorderRadius.circular(AppBorderRadius.large),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _selectDateOfBirth,
+          borderRadius: BorderRadius.circular(AppBorderRadius.large),
+          child: Container(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(AppBorderRadius.large),
+              border: Border.all(
+                color: _selectedDateOfBirth != null 
+                    ? AppColors.primaryBlue.withOpacity(0.3)
+                    : AppColors.borderLight,
+                width: 1.5,
               ),
             ),
-            const Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
-          ],
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: _selectedDateOfBirth != null
+                          ? AppColors.gradientSoftGreen
+                          : [
+                              AppColors.textTertiary.withOpacity(0.3),
+                              AppColors.textTertiary.withOpacity(0.5),
+                            ],
+                    ),
+                    borderRadius: BorderRadius.circular(AppBorderRadius.small),
+                  ),
+                  child: Icon(
+                    Icons.calendar_today_rounded, 
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.lg),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Ngày sinh',
+                        style: AppTextStyles.label.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        _selectedDateOfBirth != null
+                            ? DateFormat('EEEE, dd/MM/yyyy', 'vi_VN')
+                                .format(_selectedDateOfBirth!)
+                            : 'Chọn ngày sinh của nhân viên',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: _selectedDateOfBirth != null
+                              ? AppColors.textPrimary
+                              : AppColors.textTertiary,
+                          fontWeight: _selectedDateOfBirth != null
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.xs),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryLighter,
+                    borderRadius: BorderRadius.circular(AppBorderRadius.small),
+                  ),
+                  child: Icon(
+                    Icons.arrow_drop_down_rounded, 
+                    color: AppColors.primaryBlue,
+                    size: 20,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -415,41 +579,74 @@ class _EmployeeCreateScreenState extends State<EmployeeCreateScreen> {
   Widget _buildSubmitButton() {
     return Container(
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.primaryBlue, AppColors.primaryDark],
+        gradient: LinearGradient(
+          colors: AppColors.gradientSoftGreen,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(AppBorderRadius.medium),
-        boxShadow: AppShadows.medium,
+        borderRadius: BorderRadius.circular(AppBorderRadius.large),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.successColor.withOpacity(0.4),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: ElevatedButton(
         onPressed: _isSubmitting ? null : _submitForm,
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+            borderRadius: BorderRadius.circular(AppBorderRadius.large),
           ),
         ),
         child: _isSubmitting
-            ? const SizedBox(
-                height: 22,
-                width: 22,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
+            ? Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(
+                    height: 22,
+                    width: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Text(
+                    'Đang tạo nhân viên...',
+                    style: AppTextStyles.buttonLarge.copyWith(
+                      color: Colors.white.withOpacity(0.9),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.person_add_alt_1),
-                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.xs),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.25),
+                      borderRadius: BorderRadius.circular(AppBorderRadius.small),
+                    ),
+                    child: const Icon(
+                      Icons.person_add_alt_1_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
                   Text(
                     'Tạo Nhân Viên',
-                    style: AppTextStyles.bodyLarge.copyWith(
-                      fontWeight: FontWeight.bold,
+                    style: AppTextStyles.buttonLarge.copyWith(
+                      fontWeight: FontWeight.w800,
                       color: Colors.white,
+                      letterSpacing: 0.5,
                     ),
                   ),
                 ],
@@ -465,22 +662,76 @@ class _EmployeeCreateScreenState extends State<EmployeeCreateScreen> {
     TextInputType? keyboardType,
     String? Function(String?)? validator,
   }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      validator: validator,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon, color: AppColors.primaryBlue),
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppBorderRadius.medium),
-          borderSide: BorderSide.none,
+    return Container(
+      decoration: BoxDecoration(
+        boxShadow: AppShadows.small,
+        borderRadius: BorderRadius.circular(AppBorderRadius.large),
+      ),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: keyboardType,
+        validator: validator,
+        style: AppTextStyles.bodyMedium.copyWith(
+          fontWeight: FontWeight.w500,
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppBorderRadius.medium),
-          borderSide: const BorderSide(color: AppColors.primaryBlue, width: 2),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: AppTextStyles.label.copyWith(
+            color: AppColors.textSecondary,
+          ),
+          prefixIcon: Container(
+            margin: const EdgeInsets.all(AppSpacing.sm),
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: AppColors.gradientSoftBlue,
+              ),
+              borderRadius: BorderRadius.circular(AppBorderRadius.small),
+            ),
+            child: Icon(
+              icon, 
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.lg,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppBorderRadius.large),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppBorderRadius.large),
+            borderSide: BorderSide(
+              color: AppColors.borderLight,
+              width: 1.5,
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppBorderRadius.large),
+            borderSide: BorderSide(
+              color: AppColors.primaryBlue,
+              width: 2,
+            ),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppBorderRadius.large),
+            borderSide: BorderSide(
+              color: AppColors.errorColor,
+              width: 2,
+            ),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppBorderRadius.large),
+            borderSide: BorderSide(
+              color: AppColors.errorColor,
+              width: 2,
+            ),
+          ),
         ),
       ),
     );

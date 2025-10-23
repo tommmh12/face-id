@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/employee.dart';
 import '../../models/department.dart';
 import '../../services/employee_api_service.dart';
+import '../../config/app_theme.dart';
 
 class EmployeeListScreen extends StatefulWidget {
   const EmployeeListScreen({super.key});
@@ -91,76 +92,176 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: AppColors.bgColor,
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
-        title: const Text(
-          'Danh Sách Nhân Viên',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF1A1A1A),
-          ),
+        surfaceTintColor: Colors.transparent,
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: AppColors.gradientSoftBlue,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.people_alt_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Danh Sách Nhân Viên',
+                  style: AppTextStyles.h5.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  '${_employees.length} nhân viên',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textTertiary,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
-        iconTheme: const IconThemeData(color: Color(0xFF1A1A1A)),
         actions: [
-          IconButton(
-            onPressed: _loadData,
-            icon: const Icon(Icons.refresh_rounded),
-            tooltip: 'Làm mới',
+          Container(
+            margin: const EdgeInsets.only(right: 16),
+            decoration: BoxDecoration(
+              color: AppColors.primaryLighter,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: IconButton(
+              onPressed: _loadData,
+              icon: Icon(
+                Icons.refresh_rounded,
+                color: AppColors.primaryBlue,
+              ),
+              tooltip: 'Làm mới',
+            ),
           ),
         ],
       ),
       body: Column(
         children: [
-          // Department Filter
-          if (_departments.isNotEmpty)
-            Container(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
+          // Search & Filter Header
+          Container(
+            margin: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              children: [
+                // Search Bar
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(AppBorderRadius.large),
+                    boxShadow: AppShadows.small,
                   ),
-                ],
-              ),
-              child: DropdownButtonFormField<int?>(
-                value: _selectedDepartmentId,
-                decoration: const InputDecoration(
-                  labelText: 'Lọc theo phòng ban',
-                  border: InputBorder.none,
-                  prefixIcon: Icon(Icons.filter_list_rounded, size: 20),
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 12,
+                  child: Row(
+                    children: [
+                      Icon(Icons.search_rounded, 
+                           color: AppColors.textTertiary, size: 22),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: TextField(
+                          decoration: InputDecoration(
+                            hintText: 'Tìm kiếm nhân viên...',
+                            hintStyle: AppTextStyles.bodyMedium.copyWith(
+                              color: AppColors.textTertiary,
+                            ),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: AppSpacing.lg,
+                            ),
+                          ),
+                          onChanged: (value) {
+                            // TODO: Implement search functionality
+                          },
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: AppColors.gradientSoftBlue,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.tune_rounded,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                items: [
-                  const DropdownMenuItem<int?>(
-                    value: null,
-                    child: Text('Tất cả phòng ban'),
-                  ),
-                  ..._departments.map(
-                    (dept) => DropdownMenuItem<int?>(
-                      value: dept.id,
-                      child: Text(dept.name),
+                
+                const SizedBox(height: AppSpacing.md),
+                
+                // Department Filter
+                if (_departments.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg, 
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(AppBorderRadius.large),
+                      boxShadow: AppShadows.small,
+                    ),
+                    child: DropdownButtonFormField<int?>(
+                      value: _selectedDepartmentId,
+                      decoration: InputDecoration(
+                        labelText: 'Lọc theo phòng ban',
+                        labelStyle: AppTextStyles.label,
+                        border: InputBorder.none,
+                        prefixIcon: Icon(
+                          Icons.filter_list_rounded, 
+                          size: 20,
+                          color: AppColors.primaryBlue,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 12,
+                        ),
+                      ),
+                      items: [
+                        const DropdownMenuItem<int?>(
+                          value: null,
+                          child: Text('Tất cả phòng ban'),
+                        ),
+                        ..._departments.map(
+                          (dept) => DropdownMenuItem<int?>(
+                            value: dept.id,
+                            child: Text(dept.name),
+                          ),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedDepartmentId = value;
+                        });
+                        _loadEmployees();
+                      },
                     ),
                   ),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _selectedDepartmentId = value;
-                  });
-                  _loadEmployees();
-                },
-              ),
+              ],
             ),
+          ),
 
           // Content
           Expanded(
@@ -191,40 +292,91 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
                     ),
                   )
                 : _employees.isEmpty
-                ? const Center(
+                ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          Icons.people_outline,
-                          size: 64,
-                          color: Colors.grey,
+                        Container(
+                          padding: const EdgeInsets.all(AppSpacing.xxl),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: AppColors.gradientSoftBlue,
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            shape: BoxShape.circle,
+                            boxShadow: AppShadows.medium,
+                          ),
+                          child: const Icon(
+                            Icons.people_outline_rounded,
+                            size: 48,
+                            color: Colors.white,
+                          ),
                         ),
-                        SizedBox(height: 16),
+                        const SizedBox(height: AppSpacing.xl),
                         Text(
-                          'Không có nhân viên nào',
-                          style: TextStyle(fontSize: 16),
+                          'Chưa có nhân viên nào',
+                          style: AppTextStyles.h5.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        Text(
+                          'Hãy thêm nhân viên đầu tiên',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.textTertiary,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.xl),
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: AppColors.gradientSoftGreen,
+                            ),
+                            borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+                            boxShadow: AppShadows.small,
+                          ),
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.pushNamed(context, '/employee/create')
+                                  .then((_) => _loadData());
+                            },
+                            icon: const Icon(Icons.person_add_rounded),
+                            label: const Text('Thêm nhân viên'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.xl,
+                                vertical: AppSpacing.md,
+                              ),
+                            ),
+                          ),
                         ),
                       ],
                     ),
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg, 
+                      AppSpacing.sm, 
+                      AppSpacing.lg, 
+                      120,
+                    ),
                     itemCount: _employees.length,
                     itemBuilder: (context, index) {
                       final employee = _employees[index];
                       return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
+                        margin: const EdgeInsets.only(bottom: AppSpacing.md),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
+                          borderRadius: BorderRadius.circular(AppBorderRadius.large),
+                          boxShadow: AppShadows.small,
+                          border: Border.all(
+                            color: AppColors.borderLight,
+                            width: 1,
+                          ),
                         ),
                         child: Material(
                           color: Colors.transparent,
@@ -236,107 +388,126 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
                                 arguments: {'employeeId': employee.id},
                               ).then((_) => _loadData());
                             },
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(AppBorderRadius.large),
                             child: Padding(
-                              padding: const EdgeInsets.all(16),
+                              padding: const EdgeInsets.all(AppSpacing.lg),
                               child: Row(
                                 children: [
-                                  // Avatar with status badge
+                                  // Enhanced Avatar with gradient and status
                                   Stack(
                                     children: [
                                       Container(
-                                        width: 56,
-                                        height: 56,
+                                        width: 64,
+                                        height: 64,
                                         decoration: BoxDecoration(
-                                          color: employee.isFaceRegistered
-                                              ? const Color(0xFFE8F5E9)
-                                              : const Color(0xFFF5F5F5),
+                                          gradient: employee.isFaceRegistered
+                                              ? LinearGradient(
+                                                  colors: AppColors.gradientSoftGreen,
+                                                  begin: Alignment.topLeft,
+                                                  end: Alignment.bottomRight,
+                                                )
+                                              : LinearGradient(
+                                                  colors: [
+                                                    AppColors.textTertiary.withOpacity(0.3),
+                                                    AppColors.textTertiary.withOpacity(0.5),
+                                                  ],
+                                                ),
                                           shape: BoxShape.circle,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: employee.isFaceRegistered
+                                                  ? AppColors.successColor.withOpacity(0.3)
+                                                  : Colors.black.withOpacity(0.1),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ],
                                         ),
                                         child: Icon(
                                           employee.isFaceRegistered
-                                              ? Icons.face_retouching_natural
+                                              ? Icons.face_retouching_natural_rounded
                                               : Icons.person_outline_rounded,
-                                          color: employee.isFaceRegistered
-                                              ? const Color(0xFF43A047)
-                                              : const Color(0xFF999999),
-                                          size: 28,
+                                          color: Colors.white,
+                                          size: 32,
                                         ),
                                       ),
+                                      // Active Status Badge
                                       Positioned(
                                         right: 0,
                                         bottom: 0,
                                         child: Container(
-                                          width: 18,
-                                          height: 18,
+                                          width: 20,
+                                          height: 20,
                                           decoration: BoxDecoration(
                                             color: employee.isActive
-                                                ? const Color(0xFF43A047)
-                                                : const Color(0xFFE53935),
+                                                ? AppColors.successColor
+                                                : AppColors.errorColor,
                                             shape: BoxShape.circle,
                                             border: Border.all(
                                               color: Colors.white,
-                                              width: 2,
+                                              width: 3,
                                             ),
+                                            boxShadow: AppShadows.small,
                                           ),
                                           child: Icon(
                                             employee.isActive
-                                                ? Icons.check
-                                                : Icons.close,
+                                                ? Icons.check_rounded
+                                                : Icons.close_rounded,
                                             color: Colors.white,
-                                            size: 10,
+                                            size: 12,
                                           ),
                                         ),
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(width: 16),
-                                  // Info
+                                  const SizedBox(width: AppSpacing.lg),
+                                  // Enhanced Info Section
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
+                                        // Name with better typography
                                         Text(
                                           employee.fullName,
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w600,
-                                            color: Color(0xFF1A1A1A),
+                                          style: AppTextStyles.h6.copyWith(
+                                            fontWeight: FontWeight.w700,
                                           ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                        const SizedBox(height: 4),
+                                        const SizedBox(height: AppSpacing.xs),
+                                        // Employee Code & Department Row
                                         Row(
                                           children: [
                                             Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 8,
-                                                    vertical: 2,
-                                                  ),
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: AppSpacing.sm,
+                                                vertical: 2,
+                                              ),
                                               decoration: BoxDecoration(
-                                                color: const Color(0xFFE3F2FD),
-                                                borderRadius:
-                                                    BorderRadius.circular(4),
+                                                gradient: LinearGradient(
+                                                  colors: AppColors.gradientSoftBlue,
+                                                ),
+                                                borderRadius: BorderRadius.circular(
+                                                  AppBorderRadius.xs,
+                                                ),
                                               ),
                                               child: Text(
                                                 employee.employeeCode,
-                                                style: const TextStyle(
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: Color(0xFF1E88E5),
+                                                style: AppTextStyles.caption.copyWith(
+                                                  fontWeight: FontWeight.w700,
+                                                  color: Colors.white,
+                                                  fontSize: 10,
                                                 ),
                                               ),
                                             ),
-                                            const SizedBox(width: 8),
+                                            const SizedBox(width: AppSpacing.sm),
                                             Flexible(
                                               child: Text(
-                                                _getDepartmentName(
-                                                  employee.departmentId,
-                                                ),
-                                                style: const TextStyle(
-                                                  fontSize: 13,
-                                                  color: Color(0xFF666666),
+                                                _getDepartmentName(employee.departmentId),
+                                                style: AppTextStyles.bodySmall.copyWith(
+                                                  color: AppColors.textSecondary,
+                                                  fontWeight: FontWeight.w500,
                                                 ),
                                                 overflow: TextOverflow.ellipsis,
                                               ),
@@ -344,24 +515,30 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
                                           ],
                                         ),
                                         if (employee.position != null) ...[
-                                          const SizedBox(height: 4),
+                                          const SizedBox(height: AppSpacing.xs),
                                           Row(
                                             children: [
-                                              const Icon(
-                                                Icons.work_outline_rounded,
-                                                size: 14,
-                                                color: Color(0xFF999999),
+                                              Container(
+                                                padding: const EdgeInsets.all(2),
+                                                decoration: BoxDecoration(
+                                                  color: AppColors.primaryLighter,
+                                                  borderRadius: BorderRadius.circular(4),
+                                                ),
+                                                child: Icon(
+                                                  Icons.work_outline_rounded,
+                                                  size: 12,
+                                                  color: AppColors.primaryBlue,
+                                                ),
                                               ),
-                                              const SizedBox(width: 4),
+                                              const SizedBox(width: AppSpacing.xs),
                                               Flexible(
                                                 child: Text(
                                                   employee.position!,
-                                                  style: const TextStyle(
-                                                    fontSize: 12,
-                                                    color: Color(0xFF999999),
+                                                  style: AppTextStyles.caption.copyWith(
+                                                    color: AppColors.textTertiary,
+                                                    fontWeight: FontWeight.w500,
                                                   ),
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
+                                                  overflow: TextOverflow.ellipsis,
                                                 ),
                                               ),
                                             ],
@@ -370,35 +547,60 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
                                       ],
                                     ),
                                   ),
-                                  // Actions
-                                  if (!employee.isFaceRegistered)
-                                    Container(
-                                      margin: const EdgeInsets.only(left: 8),
-                                      child: IconButton(
-                                        onPressed: () {
-                                          Navigator.pushNamed(
-                                            context,
-                                            '/face/register',
-                                            arguments: employee,
-                                          );
-                                        },
-                                        icon: const Icon(
-                                          Icons.face_retouching_natural,
-                                          color: Color(0xFF1E88E5),
-                                        ),
-                                        tooltip: 'Đăng ký Face ID',
-                                        style: IconButton.styleFrom(
-                                          backgroundColor: const Color(
-                                            0xFFE3F2FD,
+                                  // Enhanced Action Buttons
+                                  Column(
+                                    children: [
+                                      if (!employee.isFaceRegistered)
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              colors: AppColors.gradientSoftOrange,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              AppBorderRadius.small,
+                                            ),
+                                            boxShadow: AppShadows.small,
+                                          ),
+                                          child: Material(
+                                            color: Colors.transparent,
+                                            child: InkWell(
+                                              onTap: () {
+                                                Navigator.pushNamed(
+                                                  context,
+                                                  '/face/register',
+                                                  arguments: employee,
+                                                );
+                                              },
+                                              borderRadius: BorderRadius.circular(
+                                                AppBorderRadius.small,
+                                              ),
+                                              child: Padding(
+                                                padding: const EdgeInsets.all(AppSpacing.sm),
+                                                child: Icon(
+                                                  Icons.face_retouching_natural_rounded,
+                                                  color: Colors.white,
+                                                  size: 20,
+                                                ),
+                                              ),
+                                            ),
                                           ),
                                         ),
+                                      const SizedBox(height: AppSpacing.sm),
+                                      Container(
+                                        padding: const EdgeInsets.all(AppSpacing.xs),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.borderLight,
+                                          borderRadius: BorderRadius.circular(
+                                            AppBorderRadius.small,
+                                          ),
+                                        ),
+                                        child: Icon(
+                                          Icons.arrow_forward_ios_rounded,
+                                          size: 14,
+                                          color: AppColors.textTertiary,
+                                        ),
                                       ),
-                                    ),
-                                  const SizedBox(width: 8),
-                                  const Icon(
-                                    Icons.arrow_forward_ios_rounded,
-                                    size: 16,
-                                    color: Color(0xFF999999),
+                                    ],
                                   ),
                                 ],
                               ),
@@ -411,16 +613,43 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.pushNamed(context, '/employee/create').then((_) {
-            _loadData();
-          });
-        },
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('Thêm NV'),
-        backgroundColor: const Color(0xFF1E88E5),
-        elevation: 4,
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: AppColors.gradientSoftGreen,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(AppBorderRadius.xl),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.successColor.withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: FloatingActionButton.extended(
+          onPressed: () {
+            Navigator.pushNamed(context, '/employee/create').then((_) {
+              _loadData();
+            });
+          },
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          icon: const Icon(
+            Icons.person_add_alt_1_rounded,
+            color: Colors.white,
+            size: 22,
+          ),
+          label: Text(
+            'Thêm Nhân Viên',
+            style: AppTextStyles.buttonMedium.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -237,36 +237,91 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
       ),
       body: _buildBody(),
       bottomNavigationBar: _employee != null
-          ? SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
+          ? Container(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: SafeArea(
                 child: Row(
                   children: [
+                    // Edit Button
                     Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pushNamed(
-                            context,
-                            '/employee/edit',
-                            arguments: {'employee': _employee},
-                          ).then((_) => _loadEmployeeDetails());
-                        },
-                        icon: const Icon(Icons.edit),
-                        label: const Text('Chỉnh sửa'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryBlue,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: AppColors.gradientSoftBlue,
+                          ),
+                          borderRadius: BorderRadius.circular(AppBorderRadius.large),
+                          boxShadow: AppShadows.small,
+                        ),
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.pushNamed(
+                              context,
+                              '/employee/edit',
+                              arguments: {'employee': _employee},
+                            ).then((_) => _loadEmployeeDetails());
+                          },
+                          icon: const Icon(
+                            Icons.edit_rounded,
+                            color: Colors.white,
+                          ),
+                          label: Text(
+                            'Chỉnh sửa',
+                            style: AppTextStyles.buttonMedium.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                          ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: AppSpacing.md),
+                    // Face ID Button
                     Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _updateFaceId,
-                        icon: const Icon(Icons.face),
-                        label: const Text('Face ID'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: _employee!.isFaceRegistered
+                                ? AppColors.gradientSoftOrange  // Re-register
+                                : AppColors.gradientSoftGreen,  // First register
+                          ),
+                          borderRadius: BorderRadius.circular(AppBorderRadius.large),
+                          boxShadow: AppShadows.small,
+                        ),
+                        child: ElevatedButton.icon(
+                          onPressed: _updateFaceId,
+                          icon: Icon(
+                            _employee!.isFaceRegistered
+                                ? Icons.face_retouching_natural_rounded
+                                : Icons.face_rounded,
+                            color: Colors.white,
+                          ),
+                          label: Text(
+                            _employee!.isFaceRegistered ? 'Cập nhật' : 'Đăng ký',
+                            style: AppTextStyles.buttonMedium.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                          ),
                         ),
                       ),
                     ),
@@ -412,50 +467,77 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
       ),
       child: Column(
         children: [
-          // Avatar with badge
+          // Enhanced Avatar with multiple badges
           Stack(
             children: [
               Container(
-                width: 110,
-                height: 110,
+                width: 120,
+                height: 120,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withOpacity(0.15),
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white, width: 4),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 6),
                     ),
                   ],
                 ),
                 child: Icon(
                   _employee!.isFaceRegistered
-                      ? Icons.face_retouching_natural
-                      : Icons.person_outline,
-                  size: 55,
+                      ? Icons.face_retouching_natural_rounded
+                      : Icons.person_outline_rounded,
+                  size: 60,
                   color: Colors.white,
                 ),
               ),
+              // Face ID Badge
               if (_employee!.isFaceRegistered)
                 Positioned(
-                  right: 4,
-                  bottom: 4,
+                  right: 0,
+                  bottom: 0,
                   child: Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: AppColors.successColor,
+                      gradient: LinearGradient(
+                        colors: AppColors.gradientSoftGreen,
+                      ),
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 3),
+                      boxShadow: AppShadows.medium,
                     ),
                     child: const Icon(
-                      Icons.check_rounded,
+                      Icons.verified_rounded,
                       color: Colors.white,
                       size: 18,
                     ),
                   ),
                 ),
+              // Active Status Badge - Top Right
+              Positioned(
+                right: 8,
+                top: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: _employee!.isActive
+                        ? AppColors.successColor
+                        : AppColors.errorColor,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                    boxShadow: AppShadows.small,
+                  ),
+                  child: Icon(
+                    _employee!.isActive
+                        ? Icons.work_rounded
+                        : Icons.work_off_rounded,
+                    color: Colors.white,
+                    size: 14,
+                  ),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -499,46 +581,112 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
-          // Status Badge
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.lg,
-              vertical: AppSpacing.sm,
-            ),
-            decoration: BoxDecoration(
-              color: _employee!.isActive
-                  ? Colors.white.withOpacity(0.25)
-                  : Colors.black.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.3),
-                width: 1.5,
+          // Enhanced Status Badges Row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Work Status Badge
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.sm,
+                ),
+                decoration: BoxDecoration(
+                  color: _employee!.isActive
+                      ? Colors.white.withOpacity(0.25)
+                      : Colors.black.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(AppBorderRadius.xl),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.4),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: _employee!.isActive
+                            ? Colors.greenAccent.shade200
+                            : Colors.red.shade200,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: _employee!.isActive
+                                ? Colors.greenAccent.withOpacity(0.5)
+                                : Colors.red.withOpacity(0.5),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Text(
+                      _employee!.isActive ? 'Đang làm việc' : 'Đã nghỉ việc',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: _employee!.isActive
-                        ? Colors.greenAccent.shade200
-                        : Colors.red.shade200,
-                    shape: BoxShape.circle,
-                  ),
+              const SizedBox(width: AppSpacing.md),
+              // Face ID Status Badge
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.sm,
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  _employee!.isActive ? 'Đang làm việc' : 'Đã nghỉ việc',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+                decoration: BoxDecoration(
+                  color: _employee!.isFaceRegistered
+                      ? Colors.white.withOpacity(0.25)
+                      : Colors.black.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(AppBorderRadius.xl),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.4),
+                    width: 1.5,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _employee!.isFaceRegistered
+                          ? Icons.face_retouching_natural_rounded
+                          : Icons.face_retouching_off_rounded,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Text(
+                      _employee!.isFaceRegistered ? 'Face ID' : 'No Face ID',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -592,36 +740,69 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
 
   Widget _buildInfoRow(String label, String value, {Color? valueColor}) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        vertical: AppSpacing.md,
-        horizontal: AppSpacing.md,
-      ),
-      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.bgColor,
-        borderRadius: BorderRadius.circular(AppBorderRadius.small),
+        gradient: LinearGradient(
+          colors: [
+            AppColors.bgColor,
+            Colors.white,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+        border: Border.all(
+          color: AppColors.borderLight,
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
             flex: 2,
-            child: Text(
-              label,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w500,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textTertiary,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Container(
+                  height: 2,
+                  width: 30,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: AppColors.gradientSoftBlue,
+                    ),
+                    borderRadius: BorderRadius.circular(1),
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppSpacing.lg),
           Expanded(
             flex: 3,
             child: Text(
               value,
               style: AppTextStyles.bodyMedium.copyWith(
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
                 color: valueColor ?? AppColors.textPrimary,
+                letterSpacing: -0.2,
               ),
             ),
           ),
